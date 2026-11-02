@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Namaz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button>
+      <h1 id="hello">Assalamu alaikum</h1>
+    </header>
+
+    <div class="scrim" id="scrim"></div>
+    <nav class="drawer" id="drawer" aria-label="Main menu">
+      <h2 class="drawer-h">Namaz Tracker</h2>
+      <button class="nav-item" data-view="today">Today</button>
+      <button class="nav-item" data-view="calendar">Calendar</button>
+      <button class="nav-item" data-view="missed">Missed prayers</button>
+      <button class="nav-item" data-view="stats">Stats</button>
+      <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
+      <button class="nav-item" data-view="quran">Full Quran</button>
+      <button class="nav-item" data-view="about">About us</button>
+      <hr />
+      <button class="drawer-out" id="logout">Log out</button>
+    </nav>
+
+    <section class="view" id="v-today">
+      <h2 class="date-h" id="todayDate"></h2>
+      <p class="count"><b id="done">0</b> of 5 prayed &nbsp; Streak: <b id="streak">0</b> days</p>
+      <div class="bar"><div id="fill"></div></div>
+      <p class="hint">On time is locked once confirmed. Missed one? Mark it as qaza.</p>
+      <div class="prayers" id="todayRows"></div>
+
+      <h2 class="sub-h">Night prayer (voluntary)</h2>
+      <div class="prayers" id="tahajjudRow"></div>
+      <p class="hint">Tahajjud is prayed after Isha and after waking at night. The last third of the night, before Fajr, is the best time. You can mark it for today or yesterday.</p>
+
+      <details class="settings">
+        <summary>Prayer times</summary>
+        <p class="hint">Add your city to see prayer times. "On time" then opens when each prayer starts. Times come from aladhan.com.</p>
+        <label for="city">City</label>
+        <input id="city" autocomplete="off" />
+        <label for="country">Country</label>
+        <input id="country" autocomplete="off" />
+        <label for="school">Asr calculation</label>
+        <select id="school">
+          <option value="0">Standard (Shafi, Maliki, Hanbali)</option>
+          <option value="1">Hanafi</option>
+        </select>
+        <button class="btn" id="saveCity">Save</button>
+        <button class="link-btn" id="clearCity">Remove prayer times</button>
+      </details>
+    </section>
+
+    <section class="view hidden" id="v-calendar">
+      <div class="calnav">
+        <button id="prevM" aria-label="Previous month">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button id="nextM" aria-label="Next month">›</button>
+      </div>
+      <div class="cal" id="cal"></div>
+      <p class="legend">
+        <span><i class="g"></i>All on time</span>
+        <span><i class="b"></i>All 5, some qaza</span>
+        <span><i class="l"></i>Some prayed</span>
+        <span><i class="r"></i>Has missed prayers</span>
+      </p>
+      <div class="panel">
+        <h2 id="dayTitle"></h2>
+        <div class="prayers" id="calRows"></div>
+        <div class="prayers" id="calTahajjud" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="v-missed">
+      <h2 class="date-h" id="missedTotal"></h2>
+      <p class="hint">Showing the last 60 days. For older days, use the Calendar.</p>
+      <div id="missedList"></div>
+      <div class="pager" id="missedPager"></div>
+    </section>
+
+    <section class="view hidden" id="v-stats">
+      <div class="stats" id="stats"></div>
+      <h2 class="sub-h">Missed by prayer</h2>
+      <div class="stats" id="missedBy"></div>
+    </section>
+  <section class="view hidden" id="v-learn">
+      <h2 class="date-h">Ayah of the day</h2>
+      <div class="card" id="ayah"><p class="hint">Loading…</p></div>
+      <button class="link-btn" id="anotherAyah">Show another ayah</button>
+      <h2 class="sub-h">Dua of the day</h2>
+      <div id="duaDay"></div>
+      <h2 class="sub-h">All duas</h2>
+      <input id="duaSearch" placeholder="Search duas" aria-label="Search duas" />
+      <div id="duaList"></div>
+      <div class="pager" id="duaPager"></div>
+    </section>
+
+    <section class="view hidden" id="v-quran">
+      <h2 class="date-h">The Holy Quran</h2>
+      <label for="surahSel">Surah</label>
+      <select id="surahSel" aria-label="Choose a surah"></select>
+      <div class="qtools">
+        <button class="link-btn" id="fontMinus" aria-label="Smaller Arabic text">A−</button>
+        <button class="link-btn" id="fontPlus" aria-label="Larger Arabic text">A+</button>
+        <button class="link-btn" id="toggleEn">Hide English</button>
+      </div>
+      <div id="quranBody"></div>
+      <div class="pager" id="quranPager"></div>
+      <p class="src">Arabic (Uthmani) and Saheeh International translation via alquran.cloud. Needs internet. Your place is remembered.</p>
+    </section>
+
+    <section class="view hidden" id="v-about">
+      <div id="aboutBody"></div>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="dialog">
+      <h2 id="mTitle"></h2>
+      <p id="mText"></p>
+      <div class="row">
+        <button id="mCancel">Cancel</button>
+        <button id="mOk"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="content.js"></script>
+  <script src="learn.js"></script>
+  <script src="tracker.js"></script>
+</body>
+</html>

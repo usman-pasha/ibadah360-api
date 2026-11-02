@@ -1,0 +1,18 @@
+{
+  "app": {
+    "name": "Ibadah360 - Namaz Tracker",
+    "version": "3.0",
+    "about": "Namaz Tracker helps you keep your five daily prayers, Tahajjud, qaza and daily dua in one place. It is a personal reminder tool. For religious rulings, please ask a qualified scholar."
+  },
+  "team": [
+    { "name": "Usman Pasha A", "role": "Technical Architect / Developer", "email": "usmanpasha002@gmail.com", "phone": "+91 97382 86574" },
+    { "name": "Faiz Nisa", "role": "Backend Developer", "email": "faiznisa@gmail.com", "phone": "+91 00000 00000" },
+    { "name": "Bilal Shoaib", "role": "Marketing Specialist", "email": "syedbilalshoaib@gmail.com", "phone": "+91 00000 00000" },
+    { "name": "Sakeena", "role": "Content Writer", "email": "Sakeena@gmail.com", "phone": "+91 00000 00000" }
+  ],
+  "contact": {
+    "email": "siraj.backend.dev@gmail.com",
+    "phone": "+91 97382 86574",
+    "address": "#136, 2nd cross, shadab nagar kaval byrasandra, Bangalore, Karnataka, India - 560032"
+  }
+}

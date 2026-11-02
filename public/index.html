@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Namaz Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="auth-card">
+      <h1 id="title">Log in</h1>
+      <p class="sub" id="sub">Track your five daily prayers.</p>
+
+      <div id="nameBox" class="hidden">
+        <label for="name">Name</label>
+        <input id="name" autocomplete="name" />
+      </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+
+      <p class="error" id="error" role="alert"></p>
+      <button class="btn" id="submit">Log in</button>
+      <p class="switch" id="switch">New here? <a id="toggle">Create an account</a></p>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>
