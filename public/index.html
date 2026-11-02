@@ -2,28 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Namaz Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ibadah360</title>
+  <link rel="icon" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500&family=Scheherazade+New:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="wrap">
     <section class="auth-card">
-      <h1 id="title">Log in</h1>
-      <p class="sub" id="sub">Track your five daily prayers.</p>
+      <div class="auth-head">
+        <img class="auth-logo" src="logo.png" alt="Ibadah360" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="brand-text" hidden>Ibadah360</span>
+        <h1 id="title">Log in</h1>
+      </div>
+      <p class="sub" id="sub"></p>
 
       <div id="nameBox" class="hidden">
-        <label for="name">Name</label>
+        <label for="name">Full name</label>
         <input id="name" autocomplete="name" />
+      </div>
+      <div id="phoneBox" class="hidden">
+        <label for="phone">Mobile number (optional)</label>
+        <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
       </div>
       <label for="email">Email</label>
       <input id="email" type="email" autocomplete="email" />
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" />
+      <div id="passBox">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
 
       <p class="error" id="error" role="alert"></p>
+      <p class="info" id="info" role="status"></p>
       <button class="btn" id="submit">Log in</button>
-      <p class="switch" id="switch">New here? <a id="toggle">Create an account</a></p>
+      <div class="auth-links" id="links"></div>
     </section>
   </main>
   <script src="auth.js"></script>

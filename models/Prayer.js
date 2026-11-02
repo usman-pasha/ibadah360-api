@@ -12,7 +12,12 @@ const prayerSchema = new mongoose.Schema({
   asr: field,
   maghrib: field,
   isha: field,
-  tahajjud: field, // 'done' or null (optional night prayer)
+  // optional prayers: 'done' or null
+  tahajjud: field,
+  ishraq: field,
+  duha: field,
+  awwabin: field,
+  witr: field,
 });
 
 prayerSchema.index({ user: 1, date: 1 }, { unique: true });

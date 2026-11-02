@@ -4,6 +4,7 @@ const Prayer = require('../models/Prayer');
 const User = require('../models/User');
 
 const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const NAFL = ['tahajjud', 'ishraq', 'duha', 'awwabin', 'witr']; // voluntary, locked once marked
 
 /* ---------- helpers ---------- */
 // Express 4 does not catch errors in async routes. Without this a database error
@@ -28,7 +29,7 @@ const userToday = (req) => new Date(Date.now() - offsetOf(req) * 60000).toISOStr
 const shape = (doc, date) => ({
   date,
   ...Object.fromEntries(PRAYERS.map((p) => [p, (doc && doc[p]) || null])),
-  tahajjud: (doc && doc.tahajjud) || null,
+  ...Object.fromEntries(NAFL.map((p) => [p, (doc && doc[p]) || null])),
 });
 const ensureDoc = (user, date) =>
   Prayer.updateOne({ user, date }, { $setOnInsert: { fajr: null, dhuhr: null, asr: null, maghrib: null, isha: null, tahajjud: null } }, { upsert: true }).catch((e) => {
@@ -74,20 +75,21 @@ router.post('/:date/undo', auth, safe(async (req, res) => {
   res.json(shape(doc, date));
 }));
 
-/* ---------- tahajjud (optional night prayer, locked once marked) ---------- */
-router.post('/:date/tahajjud', auth, safe(async (req, res) => {
+/* ---------- voluntary prayers (locked once marked) ---------- */
+router.post('/:date/nafl', auth, safe(async (req, res) => {
   const { date } = req.params;
-  if (!validDate(date)) return res.status(400).json({ message: 'Invalid date' });
+  const { prayer } = req.body;
+  if (!validDate(date) || !NAFL.includes(prayer)) return res.status(400).json({ message: 'Invalid request' });
   const today = userToday(req);
   if (date > today || date < addDays(today, -1))
-    return res.status(400).json({ message: 'Tahajjud can be marked for today or yesterday only' });
+    return res.status(400).json({ message: 'This prayer can be marked for today or yesterday only' });
   await ensureDoc(req.userId, date);
   const doc = await Prayer.findOneAndUpdate(
-    { user: req.userId, date, tahajjud: null },
-    { $set: { tahajjud: 'done' } },
+    { user: req.userId, date, [prayer]: null },
+    { $set: { [prayer]: 'done' } },
     { new: true }
   );
-  if (!doc) return res.status(409).json({ message: 'Tahajjud is already marked for this day' });
+  if (!doc) return res.status(409).json({ message: 'Already marked for this day' });
   res.json(shape(doc, date));
 }));
 
@@ -112,7 +114,7 @@ async function compute(req) {
 
   const windowStart = addDays(today, -59);
   const d30 = addDays(today, -29);
-  const s = { ontime: 0, qaza: 0, missed: 0, streak: 0, best: 0, last30: 0, days30: 0, tahajjud: 0 };
+  const s = { ontime: 0, qaza: 0, missed: 0, streak: 0, best: 0, last30: 0, days30: 0, tahajjud: 0, nafl: 0 };
   const missedBy = Object.fromEntries(PRAYERS.map((p) => [p, 0]));
   const days = [];
   let run = 0;
@@ -130,6 +132,7 @@ async function compute(req) {
     if (d >= d30 && d < today) s.days30++;
     if (lost.length && d >= windowStart) days.unshift({ date: d, prayers: lost });
 
+    if (doc) NAFL.forEach((k) => { if (doc[k]) s.nafl++; });
     if (doc && doc.tahajjud) { s.tahajjud++; tRun++; } else if (d < today) tRun = 0;
     const full = doc && PRAYERS.every((p) => doc[p] === 'ontime');
     if (d === today) { if (full) run++; } else run = full ? run + 1 : 0;
@@ -139,7 +142,7 @@ async function compute(req) {
 
   return {
     stats: {
-      tahajjud: s.tahajjud, tahajjudStreak: tRun, streak: s.streak, best: s.best, ontime: s.ontime, qaza: s.qaza, missed: s.missed,
+      tahajjud: s.tahajjud, nafl: s.nafl, tahajjudStreak: tRun, streak: s.streak, best: s.best, ontime: s.ontime, qaza: s.qaza, missed: s.missed,
       percent: s.days30 ? Math.round((s.last30 / (s.days30 * 5)) * 100) : null,
       missedBy,
     },

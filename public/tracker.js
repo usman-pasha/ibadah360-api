@@ -13,7 +13,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = () => fmt(new Date()); // local day, recalculated each time
 const nice = (s) =>
-  new Date(s + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  new Date(s + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const blank = (date) => ({ date, ...Object.fromEntries(PRAYERS.map((p) => [p.key, null])) });
 
 let view = 'today';
@@ -71,7 +71,7 @@ document.addEventListener('keydown', (e) => {
 const toMin = (t) => { const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m; };
 const show12 = (t) => {
   const [h, m] = t.slice(0, 5).split(':').map(Number);
-  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 };
 
 function renderRows(el, data) {
@@ -129,18 +129,19 @@ async function loadToday() {
   const [d, s] = await Promise.all([api('/' + today()), api('/stats'), loadTimes()]);
   const n = PRAYERS.filter((p) => d[p.key]).length;
   $('todayDate').textContent = nice(today());
+  showHijriToday();
   $('done').textContent = n;
   $('streak').textContent = s.streak;
   $('fill').style.width = (n / 5) * 100 + '%';
   renderRows($('todayRows'), d);
-  renderTahajjud($('tahajjudRow'), d);
+  renderNafl($('naflRow'), d);
 }
 
 async function loadCalendar() {
   const days = await api('/month/' + ym());
   const map = Object.fromEntries(days.map((d) => [d.date, d]));
   const now = new Date();
-  $('monthLabel').textContent = new Date(cal.y, cal.m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  $('monthLabel').textContent = new Date(cal.y, cal.m, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   $('nextM').disabled = cal.y === now.getFullYear() && cal.m >= now.getMonth();
 
   const grid = $('cal');
@@ -164,7 +165,7 @@ async function loadCalendar() {
       if (date < today() && n < 5) cls += ' miss';
     }
     if (date === today()) cls += ' today';
-    if (d.tahajjud) cls += ' tj';
+    if (NAFL.some((p) => d[p.key])) cls += ' tj';
     if (date === selected) cls += ' sel';
     const b = document.createElement('button');
     b.className = cls;
@@ -178,11 +179,11 @@ async function loadCalendar() {
   const showing = selected && selected.startsWith(ym());
   $('dayTitle').textContent = showing ? nice(selected) : 'Select a day to see its prayers';
   $('calRows').innerHTML = '';
-  $('calTahajjud').innerHTML = '';
+  $('calNafl').innerHTML = '';
   if (showing) {
     const day = map[selected] || blank(selected);
     renderRows($('calRows'), day);
-    renderTahajjud($('calTahajjud'), day);
+    renderNafl($('calNafl'), day);
   }
 }
 
@@ -246,6 +247,7 @@ async function loadStats() {
     ['Made up as qaza', s.qaza],
     ['Still missed', s.missed],
     ['On time, last 30 days', s.percent === null ? '–' : s.percent + '%'],
+    ['Extra prayers (nafl) marked', s.nafl],
     ['Tahajjud nights', s.tahajjud],
     ['Tahajjud streak', `${s.tahajjudStreak} night${s.tahajjudStreak === 1 ? '' : 's'}`],
   ];
@@ -261,7 +263,7 @@ async function loadView() {
   });
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'v-' + view));
   try {
-    await { today: loadToday, calendar: loadCalendar, missed: loadMissed, stats: loadStats, learn: loadLearn, quran: loadQuran, about: loadAbout }[view]();
+    await { today: loadToday, calendar: () => Promise.all([loadCalendar(), loadMissed()]), missed: loadMissed, stats: loadStats, learn: loadLearn, quran: loadQuran, hijri: loadHijri, times: loadTimesView, profile: loadProfile, about: loadAbout }[view]();
   } catch (e) {
     if (e.message !== 'Logged out') toast(e.message, true);
   }
@@ -278,65 +280,54 @@ const moveMonth = (n) => {
 $('prevM').onclick = () => moveMonth(-1);
 $('nextM').onclick = () => moveMonth(1);
 $('logout').onclick = () => { localStorage.clear(); location.href = 'index.html'; };
-$('hello').textContent = 'Assalamu alaikum, ' + (localStorage.getItem('name') || '');
 
-/* ---------- prayer times (aladhan.com) ---------- */
+/* ---------- prayer times (aladhan.com). Settings come from My profile ---------- */
+const DEFAULT_PREFS = { city: 'Bengaluru', state: 'Karnataka', madhab: 'hanafi', method: '1', hijriAdj: -1 };
+let prefs = Object.assign({}, DEFAULT_PREFS);
+try { prefs = Object.assign({}, DEFAULT_PREFS, JSON.parse(localStorage.getItem('prefs') || '{}')); } catch { /* use defaults */ }
+const setPrefs = (p) => { prefs = Object.assign({}, DEFAULT_PREFS, p); localStorage.setItem('prefs', JSON.stringify(prefs)); };
 let times = null;
 let timesWarned = false;
 
 async function loadTimes() {
-  const city = localStorage.getItem('city');
-  const country = localStorage.getItem('country');
   times = null;
-  if (!city || !country) return;
-  const school = localStorage.getItem('school') || '0';
   Object.keys(localStorage)
-    .filter((k) => k.startsWith('times|') && !k.startsWith('times|' + today()))
+    .filter((k) => k.startsWith('times') && !k.startsWith('times3|' + today()))
     .forEach((k) => localStorage.removeItem(k));
-  const key = `times|${today()}|${city}|${country}|${school}`;
+  const key = `times3|${today()}|${prefs.city}|${prefs.state}|${prefs.madhab}|${prefs.method}`;
   try {
     const cached = localStorage.getItem(key);
     if (cached) { times = JSON.parse(cached); return; }
     const [y, m, d] = today().split('-');
-    const url = `https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&school=${school}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    if (!r.ok || !j.data) throw new Error('bad response');
-    const x = j.data.timings;
-    times = { fajr: x.Fajr, dhuhr: x.Dhuhr, asr: x.Asr, maghrib: x.Maghrib, isha: x.Isha };
+    const base = `https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=${encodeURIComponent(prefs.city)}&country=India&method=${prefs.method}&school=${prefs.madhab === 'hanafi' ? 1 : 0}`;
+    let found = null;
+    for (const url of [prefs.state ? `${base}&state=${encodeURIComponent(prefs.state)}` : base, base]) {
+      try {
+        const r = await fetch(url);
+        const j = await r.json();
+        if (r.ok && j.data && j.data.timings) { found = j.data.timings; break; }
+      } catch { /* try the next address */ }
+    }
+    if (!found) throw new Error('no data');
+    times = {
+      fajr: found.Fajr, sunrise: found.Sunrise, dhuhr: found.Dhuhr, asr: found.Asr, maghrib: found.Maghrib,
+      isha: found.Isha, midnight: found.Midnight, lastthird: found.Lastthird,
+    };
     localStorage.setItem(key, JSON.stringify(times));
     timesWarned = false;
   } catch {
     times = null;
-    if (!timesWarned) { timesWarned = true; toast('Could not load prayer times. Check the city and country', true); }
+    if (!timesWarned) { timesWarned = true; toast('Could not load prayer times. Check your internet and the city in My profile', true); }
   }
 }
 
-$('city').value = localStorage.getItem('city') || '';
-$('country').value = localStorage.getItem('country') || '';
-$('school').value = localStorage.getItem('school') || '0';
-$('saveCity').onclick = () => {
-  const c = $('city').value.trim();
-  const k = $('country').value.trim();
-  if (!c || !k) return toast('Enter both city and country', true);
-  localStorage.setItem('city', c);
-  localStorage.setItem('country', k);
-  localStorage.setItem('school', $('school').value);
-  timesWarned = false;
-  toast('Prayer times saved');
-  loadToday().catch((e) => toast(e.message, true));
-};
-$('clearCity').onclick = () => {
-  ['city', 'country', 'school'].forEach((k) => localStorage.removeItem(k));
-  $('city').value = ''; $('country').value = ''; $('school').value = '0';
-  toast('Prayer times removed');
-  loadToday().catch((e) => toast(e.message, true));
-};
-
-// Refresh each minute so "Starts 4:30 PM" turns into buttons by itself
+// Refresh each minute so "Starts 4:30 pm" turns into buttons by itself
 setInterval(() => {
-  if (view === 'today' && $('modal').classList.contains('hidden')) loadToday().catch(() => {});
+  if ((view === 'today' || view === 'times') && $('modal').classList.contains('hidden')) loadView();
 }, 60000);
 
 initLearn();
+initHijri();
+initTimes();
+initProfile();
 loadView();

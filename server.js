@@ -17,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // Slow down password guessing
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 60 }), require('./routes/auth'));
+app.use('/api/profile', require('./routes/profile'));
 app.use('/api/prayers', require('./routes/prayers'));
 
 const Prayer = require('./models/Prayer');

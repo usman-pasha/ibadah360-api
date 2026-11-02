@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reset password · Ibadah360</title>
+  <link rel="icon" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500&family=Scheherazade+New:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="auth-card">
+      <div class="auth-head">
+        <img class="auth-logo" src="logo.png" alt="Ibadah360" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="brand-text" hidden>Ibadah360</span>
+        <h1>New password</h1>
+      </div>
+      <p class="sub">Use at least 6 characters.</p>
+      <label for="p1">New password</label>
+      <input id="p1" type="password" autocomplete="new-password" />
+      <label for="p2">Confirm password</label>
+      <input id="p2" type="password" autocomplete="new-password" />
+      <p class="error" id="error" role="alert"></p>
+      <p class="info" id="info" role="status"></p>
+      <button class="btn" id="save">Save password</button>
+      <div class="auth-links"><a class="link-btn" href="index.html">Back to log in</a></div>
+    </section>
+  </main>
+  <script src="reset.js"></script>
+</body>
+</html>

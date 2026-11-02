@@ -2,26 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Namaz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ibadah360</title>
+    <link rel="icon" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500&family=Scheherazade+New:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="wrap">
     <header class="top">
       <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button>
-      <h1 id="hello">Assalamu alaikum</h1>
+      <img class="brand-img" src="logo.png" alt="Ibadah360" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="brand-text" hidden>Ibadah360</span>
+      <button class="avatar" id="avatarBtn" aria-label="My profile"></button>
     </header>
 
     <div class="scrim" id="scrim"></div>
     <nav class="drawer" id="drawer" aria-label="Main menu">
-      <h2 class="drawer-h">Namaz Tracker</h2>
+      <img class="brand-img drawer-logo" src="logo.png" alt="Ibadah360" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="brand-text" hidden>Ibadah360</span>
       <button class="nav-item" data-view="today">Today</button>
-      <button class="nav-item" data-view="calendar">Calendar</button>
-      <button class="nav-item" data-view="missed">Missed prayers</button>
+      <button class="nav-item" data-view="times">Prayer times</button>
+      <button class="nav-item" data-view="calendar">Prayer calendar</button>
+      <button class="nav-item" data-view="hijri">Islamic calendar</button>
       <button class="nav-item" data-view="stats">Stats</button>
       <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
+      <button class="nav-item" data-view="profile">My profile</button>
       <button class="nav-item" data-view="about">About us</button>
       <hr />
       <button class="drawer-out" id="logout">Log out</button>
@@ -29,30 +36,15 @@
 
     <section class="view" id="v-today">
       <h2 class="date-h" id="todayDate"></h2>
+      <p class="hint" id="hijriToday"></p>
       <p class="count"><b id="done">0</b> of 5 prayed &nbsp; Streak: <b id="streak">0</b> days</p>
       <div class="bar"><div id="fill"></div></div>
       <p class="hint">On time is locked once confirmed. Missed one? Mark it as qaza.</p>
       <div class="prayers" id="todayRows"></div>
 
-      <h2 class="sub-h">Night prayer (voluntary)</h2>
-      <div class="prayers" id="tahajjudRow"></div>
-      <p class="hint">Tahajjud is prayed after Isha and after waking at night. The last third of the night, before Fajr, is the best time. You can mark it for today or yesterday.</p>
-
-      <details class="settings">
-        <summary>Prayer times</summary>
-        <p class="hint">Add your city to see prayer times. "On time" then opens when each prayer starts. Times come from aladhan.com.</p>
-        <label for="city">City</label>
-        <input id="city" autocomplete="off" />
-        <label for="country">Country</label>
-        <input id="country" autocomplete="off" />
-        <label for="school">Asr calculation</label>
-        <select id="school">
-          <option value="0">Standard (Shafi, Maliki, Hanbali)</option>
-          <option value="1">Hanafi</option>
-        </select>
-        <button class="btn" id="saveCity">Save</button>
-        <button class="link-btn" id="clearCity">Remove prayer times</button>
-      </details>
+      <h2 class="sub-h">Extra prayers (voluntary)</h2>
+      <div class="prayers" id="naflRow"></div>
+      <p class="hint">Ishraq, Duha, Awwabin, Witr and Tahajjud are voluntary. You can mark them for today or yesterday. Once confirmed they are locked.</p>
     </section>
 
     <section class="view hidden" id="v-calendar">
@@ -71,13 +63,11 @@
       <div class="panel">
         <h2 id="dayTitle"></h2>
         <div class="prayers" id="calRows"></div>
-        <div class="prayers" id="calTahajjud" style="margin-top:10px"></div>
+        <div class="prayers" id="calNafl" style="margin-top:10px"></div>
       </div>
-    </section>
 
-    <section class="view hidden" id="v-missed">
-      <h2 class="date-h" id="missedTotal"></h2>
-      <p class="hint">Showing the last 60 days. For older days, use the Calendar.</p>
+      <h2 class="sub-h" id="missedTotal"></h2>
+      <p class="hint">Missed prayers of the last 60 days. Tap one to mark it as qaza.</p>
       <div id="missedList"></div>
       <div class="pager" id="missedPager"></div>
     </section>
@@ -99,18 +89,128 @@
       <div class="pager" id="duaPager"></div>
     </section>
 
+    <section class="view hidden" id="v-times">
+      <h2 class="date-h" id="timesTitle">Prayer times</h2>
+      <p class="hint" id="timesSub"></p>
+      <div id="timesBody"></div>
+      <p class="src" id="timesNote"></p>
+      <button class="link-btn" id="tGoProfile">Change city and settings in My profile</button>
+      <p class="src">Times come from aladhan.com. Please confirm with your local masjid.</p>
+    </section>
+
+    <section class="view hidden" id="v-profile">
+      <div class="card prof-head">
+        <div class="avatar avatar-lg" id="avatarLg"></div>
+        <h2 class="date-h" id="pName"></h2>
+        <p class="src" id="pSince"></p>
+      </div>
+
+      <h2 class="sub-h">Personal details</h2>
+      <div class="card">
+        <label for="pNameIn">Full name</label>
+        <input id="pNameIn" autocomplete="name" />
+        <label for="pEmail">Email</label>
+        <input id="pEmail" disabled />
+        <label for="pPhone">Mobile number</label>
+        <input id="pPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
+        <button class="btn" id="pSave">Save details</button>
+      </div>
+
+      <h2 class="sub-h">Namaz time settings</h2>
+      <div class="card">
+        <label for="sCity">City</label>
+        <input id="sCity" autocomplete="off" />
+        <label for="sState">State</label>
+        <input id="sState" autocomplete="off" />
+        <label for="sCountry">Country</label>
+        <input id="sCountry" value="India" disabled />
+        <fieldset class="radios">
+          <legend>Asr time (madhab)</legend>
+          <label class="radio"><input type="radio" name="madhab" value="hanafi" /><span>Hanafi <small class=src>(default)</small></span></label>
+          <label class="radio"><input type="radio" name="madhab" value="shafi" /><span>Shafi, Maliki, Hanbali</span></label>
+        </fieldset>
+        <fieldset class="radios">
+          <legend>Calculation method</legend>
+          <label class="radio"><input type="radio" name="method" value="1" /><span>University of Islamic Sciences, Karachi <small class=src>(default, widely used in India)</small></span></label>
+          <label class="radio"><input type="radio" name="method" value="3" /><span>Muslim World League</span></label>
+        </fieldset>
+        <fieldset class="radios">
+          <legend>Moon sighting (Islamic calendar)</legend>
+          <label class="radio"><input type="radio" name="hijriAdj" value="-1" /><span>1 day behind Saudi Arabia <small class=src>(default, usual in India)</small></span></label>
+          <label class="radio"><input type="radio" name="hijriAdj" value="0" /><span>Same as Saudi Arabia</span></label>
+        </fieldset>
+        <button class="btn" id="sSave">Save settings</button>
+      </div>
+
+      <h2 class="sub-h">Change password</h2>
+      <div class="card">
+        <label for="pOld">Current password</label>
+        <input id="pOld" type="password" autocomplete="current-password" />
+        <label for="pNew">New password</label>
+        <input id="pNew" type="password" autocomplete="new-password" />
+        <label for="pNew2">Confirm new password</label>
+        <input id="pNew2" type="password" autocomplete="new-password" />
+        <button class="btn" id="pPass">Change password</button>
+      </div>
+    </section>
+
+    <section class="view hidden" id="v-hijri">
+      <h2 class="date-h">Islamic calendar</h2>
+      <div class="calnav">
+        <button id="hPrev" aria-label="Previous Hijri month">‹</button>
+        <div class="hhead"><h2 id="hLabel"></h2><p class="src" id="hSub"></p></div>
+        <button id="hNext" aria-label="Next Hijri month">›</button>
+      </div>
+      <div class="cal" id="hGrid"></div>
+      <p class="legend">
+        <span><i class="b"></i>Eid</span>
+        <span><i class="l"></i>Islamic event</span>
+        <span><i class="dash"></i>White days (13 to 15)</span>
+        <span><i class="fr"></i>Friday</span>
+        <button class="link-btn" id="hToday">Go to today</button>
+      </p>
+      <div class="panel">
+        <h2 id="hDayTitle"></h2>
+        <div id="hDayBody"></div>
+      </div>
+      <h2 class="sub-h">Coming up</h2>
+      <div class="stats" id="hUpcoming"></div>
+      <p class="hint">Dates follow the Umm al-Qura calendar with your moon sighting setting (by default 1 day behind Saudi Arabia, as is usual in India). Ramadan and the Eids depend on the moon, so please confirm with your local masjid or Hilal committee.
+        <button class="link-btn" id="hGoProfile">Change in My profile</button></p>
+    </section>
+
     <section class="view hidden" id="v-quran">
       <h2 class="date-h">The Holy Quran</h2>
       <label for="surahSel">Surah</label>
       <select id="surahSel" aria-label="Choose a surah"></select>
+      <div class="qrow">
+        <div>
+          <label for="scriptSel">Script style</label>
+          <select id="scriptSel">
+            <option value="indopak">Indian style (Indo-Pak script)</option>
+            <option value="uthmani">Madani style (Uthmani script)</option>
+          </select>
+        </div>
+        <div>
+          <label for="langSel">Translation</label>
+          <select id="langSel">
+            <option value="en.sahih">English</option>
+            <option value="ur.jalandhry">Urdu</option>
+            <option value="hi.hindi">Hindi</option>
+            <option value="bn.bengali">Bengali</option>
+            <option value="ta.tamil">Tamil</option>
+            <option value="ml.abdulhameed">Malayalam</option>
+            <option value="none">No translation</option>
+          </select>
+        </div>
+      </div>
       <div class="qtools">
         <button class="link-btn" id="fontMinus" aria-label="Smaller Arabic text">A−</button>
         <button class="link-btn" id="fontPlus" aria-label="Larger Arabic text">A+</button>
-        <button class="link-btn" id="toggleEn">Hide English</button>
       </div>
       <div id="quranBody"></div>
       <div class="pager" id="quranPager"></div>
-      <p class="src">Arabic (Uthmani) and Saheeh International translation via alquran.cloud. Needs internet. Your place is remembered.</p>
+      <p class="src">Madani script and translations via alquran.cloud, Indian script via quran.com. Needs internet. Your place is remembered.</p>
     </section>
 
     <section class="view hidden" id="v-about">
@@ -131,6 +231,9 @@
 
   <script src="content.js"></script>
   <script src="learn.js"></script>
+  <script src="hijri.js"></script>
+  <script src="times.js"></script>
+  <script src="profile.js"></script>
   <script src="tracker.js"></script>
 </body>
 </html>
