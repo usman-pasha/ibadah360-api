@@ -16,7 +16,6 @@ function render() {
   $('sub').textContent = t.sub;
   $('submit').textContent = t.btn;
   $('nameBox').classList.toggle('hidden', mode !== 'register');
-  $('phoneBox').classList.toggle('hidden', mode !== 'register');
   $('passBox').classList.toggle('hidden', mode === 'forgot');
   $('password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
   $('error').textContent = '';
@@ -41,7 +40,7 @@ async function submit() {
   $('info').textContent = '';
   const body = { email: $('email').value };
   if (mode !== 'forgot') body.password = $('password').value;
-  if (mode === 'register') { body.name = $('name').value; body.phone = $('phone').value; }
+  if (mode === 'register') body.name = $('name').value;
   try {
     const res = await fetch('/api/auth/' + mode, {
       method: 'POST',

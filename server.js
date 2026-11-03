@@ -17,10 +17,13 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // Slow down password guessing
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 60 }), require('./routes/auth'));
+app.use('/api/about', require('./routes/about'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/prayers', require('./routes/prayers'));
 
 const Prayer = require('./models/Prayer');
+const About = require('./models/About');
+const aboutSeed = require('./seed/aboutSeed');
 const NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 // Version 1 saved true/false. Version 2 uses 'ontime' / 'qaza' / null.
@@ -32,12 +35,21 @@ async function migrate() {
   }
 }
 
+// Fill the About us page the first time. Existing data is never overwritten here.
+async function seedAboutIfMissing() {
+  if (!(await About.exists({ key: 'main' }))) {
+    await About.create(aboutSeed);
+    console.log('About us data seeded');
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 mongoose
   .connect(process.env.MONGO_URI)
   .then(async () => {
     console.log('MongoDB connected');
     await migrate();
+    await seedAboutIfMissing();
     app.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));
   })
   .catch((err) => console.error('MongoDB connection error:', err.message));

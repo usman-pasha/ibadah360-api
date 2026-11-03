@@ -118,33 +118,53 @@ async function loadLearn() {
 async function loadAbout() {
   const box = $('aboutBody');
   let info;
-  try { info = await (await fetch('/team.json')).json(); }
-  catch { box.textContent = 'Could not load team.json'; return; }
+  try {
+    const r = await fetch('/api/about', { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401) { localStorage.clear(); location.href = 'index.html'; return; }
+    info = await r.json();
+    if (!r.ok) throw new Error(info.message || 'Could not load About us');
+  } catch (e) {
+    box.replaceChildren(mk('p', 'empty', e.message || 'Could not load About us'));
+    return;
+  }
   box.replaceChildren();
-
-  const intro = mk('div', 'card');
-  intro.append(mk('h2', 'date-h', `${info.app.name} · v${info.app.version}`), mk('p', '', info.app.about));
-  box.appendChild(intro);
 
   const link = (href, text) => { const a = mk('a', '', text); a.href = href; return a; };
   const tel = (p) => 'tel:' + String(p).replace(/[^\d+]/g, '');
 
+  const intro = mk('div', 'card');
+  intro.append(mk('h2', 'date-h', `${info.appName} · v${info.version}`), mk('p', 'src', info.tagline), mk('p', '', info.about));
+  box.appendChild(intro);
+
+  if ((info.features || []).length) {
+    box.appendChild(mk('h2', 'sub-h', 'What you can do'));
+    const fc = mk('div', 'card');
+    const ul = mk('ul', 'feat');
+    info.features.forEach((f) => ul.appendChild(mk('li', '', f)));
+    fc.appendChild(ul);
+    box.appendChild(fc);
+  }
+
   box.appendChild(mk('h2', 'sub-h', 'Developers and team'));
-  info.team.forEach((m) => {
+  (info.team || []).forEach((m) => {
     const c = mk('div', 'card');
-    c.append(mk('h3', '', m.name), mk('p', 'src', m.role));
     const p1 = mk('p'); p1.append('Email: ', link('mailto:' + m.email, m.email));
     const p2 = mk('p'); p2.append('Phone: ', link(tel(m.phone), m.phone));
-    c.append(p1, p2);
+    c.append(mk('h3', '', m.name), mk('p', 'src', m.role), p1, p2);
     box.appendChild(c);
   });
 
-  box.appendChild(mk('h2', 'sub-h', 'Contact'));
-  const c = mk('div', 'card');
-  const e = mk('p'); e.append('Email: ', link('mailto:' + info.contact.email, info.contact.email));
-  const p = mk('p'); p.append('Phone: ', link(tel(info.contact.phone), info.contact.phone));
-  c.append(e, p, mk('p', '', 'Address: ' + info.contact.address));
-  box.appendChild(c);
+  if (info.contact) {
+    box.appendChild(mk('h2', 'sub-h', 'Contact us'));
+    const c = mk('div', 'card');
+    const e = mk('p'); e.append('Email: ', link('mailto:' + info.contact.email, info.contact.email));
+    const p = mk('p'); p.append('Phone: ', link(tel(info.contact.phone), info.contact.phone));
+    c.append(e, p, mk('p', '', 'Address: ' + info.contact.address));
+    box.appendChild(c);
+  }
+
+  if (info.disclaimer) box.appendChild(mk('p', 'src disclaimer', info.disclaimer));
+  if (info.copyright) box.appendChild(mk('p', 'copy', info.copyright));
 }
 
 function initLearn() {
