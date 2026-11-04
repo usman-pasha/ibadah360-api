@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Ibadah360</title>
   <meta name="theme-color" content="#fff0f6" />
-    <link rel="icon" href="logo.png" />
+  <link rel="icon" href="logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500&family=Scheherazade+New:wght@400;500&display=swap" rel="stylesheet" />
@@ -27,6 +27,8 @@
       <button class="nav-item" data-view="calendar">Prayer calendar</button>
       <button class="nav-item" data-view="hijri">Islamic calendar</button>
       <button class="nav-item" data-view="stats">Stats</button>
+      <button class="nav-item" data-view="people">Find people</button>
+      <button class="nav-item" data-view="requests">Follow requests <span class="count-badge" id="reqBadge" hidden>0</span></button>
       <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
       <button class="nav-item" data-view="profile">My profile</button>
@@ -42,10 +44,18 @@
       <div class="bar"><div id="fill"></div></div>
       <p class="hint">On time is locked once confirmed. Missed one? Mark it as qaza.</p>
       <div class="prayers" id="todayRows"></div>
-
       <h2 class="sub-h">Extra prayers (voluntary)</h2>
       <div class="prayers" id="naflRow"></div>
       <p class="hint">Ishraq, Duha, Awwabin, Witr and Tahajjud are voluntary. You can mark them for today or yesterday. Once confirmed they are locked.</p>
+    </section>
+
+    <section class="view hidden" id="v-times">
+      <h2 class="date-h">Prayer times</h2>
+      <p class="hint" id="timesSub"></p>
+      <div id="timesBody"></div>
+      <p class="src" id="timesNote"></p>
+      <button class="link-btn" id="tGoProfile">Change city and settings in My profile</button>
+      <p class="src" id="timesSource"></p>
     </section>
 
     <section class="view hidden" id="v-calendar">
@@ -63,6 +73,7 @@
       </p>
       <div class="panel">
         <h2 id="dayTitle"></h2>
+        <p class="src" id="dayHijri"></p>
         <div class="prayers" id="calRows"></div>
         <div class="prayers" id="calNafl" style="margin-top:10px"></div>
       </div>
@@ -71,88 +82,6 @@
       <p class="hint">Missed prayers of the last 60 days. Tap one to mark it as qaza.</p>
       <div id="missedList"></div>
       <div class="pager" id="missedPager"></div>
-    </section>
-
-    <section class="view hidden" id="v-stats">
-      <div class="stats" id="stats"></div>
-      <h2 class="sub-h">Missed by prayer</h2>
-      <div class="stats" id="missedBy"></div>
-    </section>
-  <section class="view hidden" id="v-learn">
-      <h2 class="date-h">Ayah of the day</h2>
-      <div class="card" id="ayah"><p class="hint">Loading…</p></div>
-      <button class="link-btn" id="anotherAyah">Show another ayah</button>
-      <h2 class="sub-h">Dua of the day</h2>
-      <div id="duaDay"></div>
-      <h2 class="sub-h">All duas</h2>
-      <input id="duaSearch" placeholder="Search duas" aria-label="Search duas" />
-      <div id="duaList"></div>
-      <div class="pager" id="duaPager"></div>
-    </section>
-
-    <section class="view hidden" id="v-times">
-      <h2 class="date-h" id="timesTitle">Prayer times</h2>
-      <p class="hint" id="timesSub"></p>
-      <div id="timesBody"></div>
-      <p class="src" id="timesNote"></p>
-      <button class="link-btn" id="tGoProfile">Change city and settings in My profile</button>
-      <p class="src">Times come from aladhan.com. Please confirm with your local masjid.</p>
-    </section>
-
-    <section class="view hidden" id="v-profile">
-      <div class="card prof-head">
-        <div class="avatar avatar-lg" id="avatarLg"></div>
-        <h2 class="date-h" id="pName"></h2>
-        <p class="src" id="pSince"></p>
-      </div>
-
-      <h2 class="sub-h">Personal details</h2>
-      <div class="card">
-        <label for="pNameIn">Full name</label>
-        <input id="pNameIn" autocomplete="name" />
-        <label for="pEmail">Email</label>
-        <input id="pEmail" disabled />
-        <label for="pPhone">Mobile number</label>
-        <input id="pPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
-        <button class="btn" id="pSave">Save details</button>
-      </div>
-
-      <h2 class="sub-h">Namaz time settings</h2>
-      <div class="card">
-        <label for="sCity">City</label>
-        <input id="sCity" autocomplete="off" />
-        <label for="sState">State</label>
-        <input id="sState" autocomplete="off" />
-        <label for="sCountry">Country</label>
-        <input id="sCountry" value="India" disabled />
-        <fieldset class="radios">
-          <legend>Asr time (madhab)</legend>
-          <label class="radio"><input type="radio" name="madhab" value="hanafi" /><span>Hanafi <small class=src>(default)</small></span></label>
-          <label class="radio"><input type="radio" name="madhab" value="shafi" /><span>Shafi, Maliki, Hanbali</span></label>
-        </fieldset>
-        <fieldset class="radios">
-          <legend>Calculation method</legend>
-          <label class="radio"><input type="radio" name="method" value="1" /><span>University of Islamic Sciences, Karachi <small class=src>(default, widely used in India)</small></span></label>
-          <label class="radio"><input type="radio" name="method" value="3" /><span>Muslim World League</span></label>
-        </fieldset>
-        <fieldset class="radios">
-          <legend>Moon sighting (Islamic calendar)</legend>
-          <label class="radio"><input type="radio" name="hijriAdj" value="-1" /><span>1 day behind Saudi Arabia <small class=src>(default, usual in India)</small></span></label>
-          <label class="radio"><input type="radio" name="hijriAdj" value="0" /><span>Same as Saudi Arabia</span></label>
-        </fieldset>
-        <button class="btn" id="sSave">Save settings</button>
-      </div>
-
-      <h2 class="sub-h">Change password</h2>
-      <div class="card">
-        <label for="pOld">Current password</label>
-        <input id="pOld" type="password" autocomplete="current-password" />
-        <label for="pNew">New password</label>
-        <input id="pNew" type="password" autocomplete="new-password" />
-        <label for="pNew2">Confirm new password</label>
-        <input id="pNew2" type="password" autocomplete="new-password" />
-        <button class="btn" id="pPass">Change password</button>
-      </div>
     </section>
 
     <section class="view hidden" id="v-hijri">
@@ -180,30 +109,71 @@
         <button class="link-btn" id="hGoProfile">Change in My profile</button></p>
     </section>
 
+    <section class="view hidden" id="v-stats">
+      <div class="stats" id="stats"></div>
+      <h2 class="sub-h">Missed by prayer</h2>
+      <div class="stats" id="missedBy"></div>
+    </section>
+
+    <section class="view hidden" id="v-people">
+      <h2 class="date-h">Find people</h2>
+      <input id="peopleSearch" type="search" placeholder="Search by name or username" aria-label="Search people" autocomplete="off" />
+      <p class="hint" id="peopleHint"></p>
+      <div id="peopleList"></div>
+      <div class="pager" id="peoplePager"></div>
+    </section>
+
+    <section class="view hidden" id="v-user">
+      <button class="link-btn" id="uBack">‹ Back</button>
+      <div class="card prof-head">
+        <div class="avatar avatar-lg" id="uAvatar"></div>
+        <h2 class="date-h" id="uName"></h2>
+        <p class="src" id="uHandle"></p>
+        <p id="uBio"></p>
+        <div class="counts">
+          <button id="uFollowers"></button>
+          <button id="uFollowing"></button>
+        </div>
+        <div class="uaction" id="uAction"></div>
+        <p class="src" id="uSince"></p>
+      </div>
+      <div class="card hidden" id="uPrivate">
+        <h3>This account is private</h3>
+        <p>Follow this account to see who follows them and who they follow. They will need to approve your request.</p>
+      </div>
+      <div class="hidden" id="uConn">
+        <h2 class="sub-h" id="uConnTitle"></h2>
+        <div id="uConnList"></div>
+        <div class="pager" id="uConnPager"></div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="v-requests">
+      <h2 class="date-h">Follow requests</h2>
+      <p class="hint" id="reqHint"></p>
+      <div id="reqList"></div>
+      <div class="pager" id="reqPager"></div>
+    </section>
+
+    <section class="view hidden" id="v-learn">
+      <h2 class="date-h">Ayah of the day</h2>
+      <div class="card" id="ayah"><p class="hint">Loading…</p></div>
+      <button class="link-btn" id="anotherAyah">Show another ayah</button>
+      <h2 class="sub-h">Dua of the day</h2>
+      <div id="duaDay"></div>
+      <h2 class="sub-h">All duas</h2>
+      <input id="duaSearch" placeholder="Search duas" aria-label="Search duas" />
+      <div id="duaList"></div>
+      <div class="pager" id="duaPager"></div>
+    </section>
+
     <section class="view hidden" id="v-quran">
       <h2 class="date-h">The Holy Quran</h2>
       <label for="surahSel">Surah</label>
       <select id="surahSel" aria-label="Choose a surah"></select>
       <div class="qrow">
-        <div>
-          <label for="scriptSel">Script style</label>
-          <select id="scriptSel">
-            <option value="indopak">Indian style (Indo-Pak script)</option>
-            <option value="uthmani">Madani style (Uthmani script)</option>
-          </select>
-        </div>
-        <div>
-          <label for="langSel">Translation</label>
-          <select id="langSel">
-            <option value="en.sahih">English</option>
-            <option value="ur.jalandhry">Urdu</option>
-            <option value="hi.hindi">Hindi</option>
-            <option value="bn.bengali">Bengali</option>
-            <option value="ta.tamil">Tamil</option>
-            <option value="ml.abdulhameed">Malayalam</option>
-            <option value="none">No translation</option>
-          </select>
-        </div>
+        <div><label for="scriptSel">Script style</label><select id="scriptSel"></select></div>
+        <div><label for="langSel">Translation</label><select id="langSel"></select></div>
       </div>
       <div class="qtools">
         <button class="link-btn" id="fontMinus" aria-label="Smaller Arabic text">A−</button>
@@ -211,7 +181,69 @@
       </div>
       <div id="quranBody"></div>
       <div class="pager" id="quranPager"></div>
-      <p class="src">Madani script and translations via alquran.cloud, Indian script via quran.com. Needs internet. Your place is remembered.</p>
+      <p class="src">The Quran is saved in the Ibadah360 database. The first time a surah is opened it can take a few seconds. Your place is remembered.</p>
+    </section>
+
+    <section class="view hidden" id="v-profile">
+      <div class="card prof-head">
+        <div class="avatar avatar-lg" id="avatarLg"></div>
+        <h2 class="date-h" id="pName"></h2>
+        <p class="src" id="pHandle"></p>
+        <p class="src" id="pSince"></p>
+      </div>
+
+      <h2 class="sub-h">Personal details</h2>
+      <div class="card">
+        <label for="pNameIn">Full name</label>
+        <input id="pNameIn" autocomplete="name" />
+        <label for="pUsername">Username</label>
+        <input id="pUsername" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <label for="pBio">Bio</label>
+        <textarea id="pBio" rows="3" placeholder="Tell people a little about you"></textarea>
+        <label for="pEmail">Email</label>
+        <input id="pEmail" disabled />
+        <label for="pPhone">Mobile number</label>
+        <input id="pPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
+        <button class="btn" id="pSave">Save details</button>
+      </div>
+
+      <h2 class="sub-h">Account privacy</h2>
+      <div class="card">
+        <label class="switch-row" for="pPrivate">
+          <span><b>Private account</b><small class="src">When on, people must send a follow request and you approve them. When off, anyone can follow you.</small></span>
+          <input type="checkbox" id="pPrivate" role="switch" />
+        </label>
+        <div class="counts">
+          <button id="pFollowers"></button>
+          <button id="pFollowing"></button>
+        </div>
+        <button class="btn" id="pViewPublic">See my profile as others see it</button>
+      </div>
+
+      <h2 class="sub-h">Namaz time settings</h2>
+      <div class="card">
+        <label for="sCity">City</label>
+        <input id="sCity" autocomplete="off" />
+        <label for="sState">State</label>
+        <input id="sState" autocomplete="off" />
+        <label for="sCountry">Country</label>
+        <input id="sCountry" value="India" disabled />
+        <fieldset class="radios" id="madhabBox"></fieldset>
+        <fieldset class="radios" id="methodBox"></fieldset>
+        <fieldset class="radios" id="hijriBox"></fieldset>
+        <button class="btn" id="sSave">Save settings</button>
+      </div>
+
+      <h2 class="sub-h">Change password</h2>
+      <div class="card">
+        <label for="pOld">Current password</label>
+        <input id="pOld" type="password" autocomplete="current-password" />
+        <label for="pNew">New password</label>
+        <input id="pNew" type="password" autocomplete="new-password" />
+        <label for="pNew2">Confirm new password</label>
+        <input id="pNew2" type="password" autocomplete="new-password" />
+        <button class="btn" id="pPass">Change password</button>
+      </div>
     </section>
 
     <section class="view hidden" id="v-about">
@@ -231,11 +263,11 @@
   </div>
 
   <script src="eye.js"></script>
-  <script src="content.js"></script>
   <script src="learn.js"></script>
   <script src="hijri.js"></script>
   <script src="times.js"></script>
   <script src="profile.js"></script>
+  <script src="social.js"></script>
   <script src="tracker.js"></script>
 </body>
 </html>

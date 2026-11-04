@@ -1,0 +1,53 @@
+// Default content. It is saved in MongoDB the first time the server starts (and by `npm run seed`).
+// After that the app reads everything from the database.
+const prayerDefs = [
+  { kind: 'fard', key: 'fajr', order: 1, name: 'Fajr', ar: 'الفجر' },
+  { kind: 'fard', key: 'dhuhr', order: 2, name: 'Dhuhr', ar: 'الظهر' },
+  { kind: 'fard', key: 'asr', order: 3, name: 'Asr', ar: 'العصر' },
+  { kind: 'fard', key: 'maghrib', order: 4, name: 'Maghrib', ar: 'المغرب' },
+  { kind: 'fard', key: 'isha', order: 5, name: 'Isha', ar: 'العشاء' },
+  { kind: 'nafl', key: 'ishraq', order: 1, name: 'Ishraq', ar: 'الإشراق', tip: '2 or 4 rakats, about 15 to 20 minutes after sunrise' },
+  { kind: 'nafl', key: 'duha', order: 2, name: 'Duha (Chasht)', ar: 'الضحى', tip: '2 to 12 rakats, from mid-morning until before Dhuhr' },
+  { kind: 'nafl', key: 'awwabin', order: 3, name: 'Awwabin', ar: 'الأوابين', tip: '2 to 6 rakats after the Maghrib prayer' },
+  { kind: 'nafl', key: 'witr', order: 4, name: 'Witr', ar: 'الوتر', tip: 'An odd number of rakats (1, 3 or more) after Isha' },
+  { kind: 'nafl', key: 'tahajjud', order: 5, name: 'Tahajjud', ar: 'التهجد', tip: '2 to 12 rakats after sleeping, best in the last third of the night' },
+];
+
+const hijriEvents = [
+  { m: 1, d: 1, name: 'Islamic New Year', note: 'First day of Muharram and of the new Hijri year.' },
+  { m: 1, d: 10, name: 'Day of Ashura', note: 'Fasting on this day is recommended.' },
+  { m: 3, d: 12, name: 'Mawlid an-Nabi', note: 'Birth of the Prophet ﷺ, observed by many Muslims.' },
+  { m: 7, d: 27, name: "Isra and Mi'raj", note: 'The Night Journey and Ascension, observed by many Muslims.' },
+  { m: 8, d: 15, name: "Mid-Sha'ban (Shab-e-Barat)", note: 'Observed by many Muslims with prayer and dua.' },
+  { m: 9, d: 1, name: 'First day of Ramadan', note: 'The month of fasting begins.' },
+  { m: 9, d: 21, name: 'Last ten nights of Ramadan begin', note: 'Seek Laylat al-Qadr on the odd nights.' },
+  { m: 9, d: 27, name: 'Laylat al-Qadr (27th night)', note: 'Commonly observed. It is sought on the odd nights of the last ten.' },
+  { m: 10, d: 1, name: 'Eid al-Fitr', eid: true, note: 'Festival at the end of Ramadan. Eid prayer, Zakat al-Fitr and celebration.' },
+  { m: 12, d: 1, name: 'First ten days of Dhul Hijjah', note: 'Days of great reward for good deeds.' },
+  { m: 12, d: 9, name: 'Day of Arafah', note: 'Fasting is recommended for those who are not on Hajj.' },
+  { m: 12, d: 10, name: 'Eid al-Adha', eid: true, note: 'Festival of sacrifice. Eid prayer and Qurbani.' },
+  { m: 12, d: 11, name: 'Days of Tashreeq begin', note: 'The 11th to 13th. Days of eating, drinking and remembering Allah.' },
+];
+
+const dailyAyahs = ['2:255', '94:5', '13:28', '65:3', '2:286', '3:139', '39:53', '2:153', '2:186', '17:79', '51:18', '29:45', '2:152', '55:13']
+  .map((r, i) => ({ order: i + 1, surah: Number(r.split(':')[0]), ayah: Number(r.split(':')[1]) }));
+
+const duas = [
+  { cat: 'Daily', title: 'When you wake up', src: 'Sahih al-Bukhari', ar: 'ٱلْحَمْدُ لِلَّهِ ٱلَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ ٱلنُّشُورُ', tr: "Alhamdu lillahil-ladhi ahyana ba'da ma amatana wa ilayhin-nushur.", en: 'All praise is for Allah who gave us life after causing us to die, and to Him is the return.' },
+  { cat: 'Daily', title: 'Before sleeping', src: 'Sahih al-Bukhari', ar: 'بِٱسْمِكَ ٱللَّهُمَّ أَمُوتُ وَأَحْيَا', tr: 'Bismika Allahumma amutu wa ahya.', en: 'In Your name, O Allah, I die and I live.' },
+  { cat: 'Daily', title: 'Before eating', src: 'Abu Dawud, Tirmidhi', ar: 'بِسْمِ ٱللَّهِ', tr: 'Bismillah.', en: 'In the name of Allah.' },
+  { cat: 'Daily', title: 'After eating', src: 'Abu Dawud, Tirmidhi', ar: 'ٱلْحَمْدُ لِلَّهِ ٱلَّذِي أَطْعَمَنَا وَسَقَانَا وَجَعَلَنَا مُسْلِمِينَ', tr: "Alhamdu lillahil-ladhi at'amana wa saqana wa ja'alana muslimin.", en: 'Praise be to Allah who fed us, gave us drink and made us Muslims.' },
+  { cat: 'Daily', title: 'Leaving home', src: 'Abu Dawud, Tirmidhi', ar: 'بِسْمِ ٱللَّهِ تَوَكَّلْتُ عَلَى ٱللَّهِ وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِٱللَّهِ', tr: "Bismillahi tawakkaltu 'alallahi wa la hawla wa la quwwata illa billah.", en: "In Allah's name. I rely on Allah. There is no power or strength except with Allah." },
+  { cat: 'Daily', title: 'Entering the mosque', src: 'Sahih Muslim', ar: 'ٱللَّهُمَّ ٱفْتَحْ لِي أَبْوَابَ رَحْمَتِكَ', tr: 'Allahummaf-tah li abwaba rahmatik.', en: 'O Allah, open for me the doors of Your mercy.' },
+  { cat: 'Daily', title: 'Leaving the mosque', src: 'Sahih Muslim', ar: 'ٱللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ', tr: "Allahumma inni as'aluka min fadlik.", en: 'O Allah, I ask You of Your bounty.' },
+  { cat: 'Tahajjud and forgiveness', title: 'Asking forgiveness at night', src: 'Abu Dawud, Tirmidhi', ar: 'رَبِّ ٱغْفِرْ لِي وَتُبْ عَلَيَّ إِنَّكَ أَنتَ ٱلتَّوَّابُ ٱلرَّحِيمُ', tr: "Rabbighfir li wa tub 'alayya innaka antat-tawwabur-rahim.", en: 'My Lord, forgive me and accept my repentance. You are the One who accepts repentance, the Merciful.' },
+  { cat: 'Tahajjud and forgiveness', title: 'Dua of Prophet Yunus', src: 'Quran 21:87', ar: 'لَا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ ٱلظَّالِمِينَ', tr: 'La ilaha illa anta subhanaka inni kuntu minaz-zalimin.', en: 'There is no god but You. Glory to You. I have been among the wrongdoers.' },
+  { cat: 'From the Quran', title: 'Good in this world and the next', src: 'Quran 2:201', ar: 'رَبَّنَا آتِنَا فِي ٱلدُّنْيَا حَسَنَةً وَفِي ٱلْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ ٱلنَّارِ', tr: "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar.", en: 'Our Lord, give us good in this world and good in the next, and protect us from the punishment of the Fire.' },
+  { cat: 'From the Quran', title: 'For parents', src: 'Quran 17:24', ar: 'رَبِّ ٱرْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا', tr: 'Rabbir-hamhuma kama rabbayani saghira.', en: 'My Lord, have mercy on them as they raised me when I was small.' },
+  { cat: 'From the Quran', title: 'For knowledge', src: 'Quran 20:114', ar: 'رَبِّ زِدْنِي عِلْمًا', tr: "Rabbi zidni 'ilma.", en: 'My Lord, increase me in knowledge.' },
+  { cat: 'From the Quran', title: 'In difficulty', src: 'Quran 3:173', ar: 'حَسْبُنَا ٱللَّهُ وَنِعْمَ ٱلْوَكِيلُ', tr: "Hasbunallahu wa ni'mal-wakil.", en: 'Allah is enough for us, and He is the best protector.' },
+  { cat: 'From the Quran', title: 'A steady heart', src: 'Quran 3:8', ar: 'رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً إِنَّكَ أَنتَ ٱلْوَهَّابُ', tr: "Rabbana la tuzigh qulubana ba'da idh hadaytana wa hab lana min ladunka rahmah, innaka antal-wahhab.", en: 'Our Lord, do not let our hearts go astray after You have guided us, and grant us mercy from Yourself. You are the Giver.' },
+  { cat: 'From the Quran', title: 'To keep up prayer', src: 'Quran 14:40', ar: 'رَبِّ ٱجْعَلْنِي مُقِيمَ ٱلصَّلَاةِ وَمِن ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ', tr: "Rabbij-'alni muqimas-salati wa min dhurriyyati, Rabbana wa taqabbal du'a.", en: 'My Lord, make me one who keeps up prayer, and my children too. Our Lord, accept my prayer.' },
+].map((d, i) => ({ order: i + 1, ...d }));
+
+module.exports = { prayerDefs, hijriEvents, dailyAyahs, duas };

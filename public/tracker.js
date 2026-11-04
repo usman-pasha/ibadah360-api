@@ -1,29 +1,24 @@
+/* Ibadah360 web app. This file only shows what the server sends. All rules, content and
+   calculations (prayer times, Islamic dates, Quran, duas, streaks) live in the Node.js backend. */
 const token = localStorage.getItem('token');
 if (!token) location.href = 'index.html';
 
-const PRAYERS = [
-  { key: 'fajr', name: 'Fajr', ar: 'الفجر' },
-  { key: 'dhuhr', name: 'Dhuhr', ar: 'الظهر' },
-  { key: 'asr', name: 'Asr', ar: 'العصر' },
-  { key: 'maghrib', name: 'Maghrib', ar: 'المغرب' },
-  { key: 'isha', name: 'Isha', ar: 'العشاء' },
-];
 const $ = (id) => document.getElementById(id);
-const pad = (n) => String(n).padStart(2, '0');
-const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const today = () => fmt(new Date()); // local day, recalculated each time
-const nice = (s) =>
-  new Date(s + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-const blank = (date) => ({ date, ...Object.fromEntries(PRAYERS.map((p) => [p.key, null])) });
+const mk = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
 
 let view = 'today';
-let cal = { y: new Date().getFullYear(), m: new Date().getMonth() };
-let selected = today();
-const ym = () => `${cal.y}-${pad(cal.m + 1)}`;
+let calMonth = 'current';
+let selected = null;
+let missedPage = 1;
 
-/* ---------- api, toast, confirmation ---------- */
+/* ---------- talking to the server ---------- */
 async function api(path, options = {}) {
-  const res = await fetch('/api/prayers' + path, {
+  const res = await fetch('/api' + path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -39,16 +34,21 @@ async function api(path, options = {}) {
   return data;
 }
 
+let metaCache = null;
+async function getMeta() {
+  if (!metaCache) metaCache = await api('/meta');
+  return metaCache;
+}
+
+/* ---------- toast, confirmation box ---------- */
 let toastTimer;
 function toast(msg, isError) {
   document.querySelectorAll('.toast').forEach((t) => t.remove());
-  const t = document.createElement('div');
-  t.className = 'toast' + (isError ? ' err' : '');
+  const t = mk('div', 'toast' + (isError ? ' err' : ''), msg);
   t.setAttribute('role', 'status');
-  t.textContent = msg;
   document.body.appendChild(t);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.remove(), 3000);
+  toastTimer = setTimeout(() => t.remove(), 3500);
 }
 
 function confirmBox(title, text, okLabel) {
@@ -67,46 +67,88 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('modal').classList.contains('hidden')) $('mCancel').click();
 });
 
-/* ---------- prayer rows (used by Today and Calendar) ---------- */
-const toMin = (t) => { const [h, m] = t.slice(0, 5).split(':').map(Number); return h * 60 + m; };
-const show12 = (t) => {
-  const [h, m] = t.slice(0, 5).split(':').map(Number);
-  return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
-};
+/* ---------- menu and page buttons ---------- */
+function openDrawer() {
+  $('drawer').classList.add('open');
+  $('scrim').classList.add('open');
+  $('menuBtn').setAttribute('aria-expanded', 'true');
+  ($('drawer').querySelector('.nav-item.active') || $('drawer').querySelector('.nav-item')).focus();
+}
+function closeDrawer() {
+  $('drawer').classList.remove('open');
+  $('scrim').classList.remove('open');
+  $('menuBtn').setAttribute('aria-expanded', 'false');
+}
 
-function renderRows(el, data) {
-  const isToday = data.date === today();
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  el.innerHTML = '';
-  PRAYERS.forEach((p) => {
-    const st = data[p.key];
-    const tm = isToday && times ? times[p.key] : null;
-    const notYet = !st && tm && nowMin < toMin(tm);
-    let actions = '';
-    if (notYet) {
-      actions = `<span class="badge soft">Starts ${show12(tm)}</span>`;
-    } else if (!st) {
-      if (isToday) actions += '<button class="act on" data-a="ontime">On time</button>';
-      actions += '<button class="act qz" data-a="qaza">Qaza</button>';
-    } else if (st === 'ontime') {
-      actions = '<span class="badge">On time · locked</span>';
-    } else {
-      actions = '<span class="badge">Qaza</span><button class="act undo" data-a="undo">Undo</button>';
-    }
-    const row = document.createElement('div');
-    row.className = 'prayer ' + (st || '');
-    row.innerHTML =
-      `<span class="tick">✓</span><div class="pinfo"><span class="name">${p.name}</span>` +
-      `<span class="ar" lang="ar">${p.ar}</span>${tm ? `<span class="time">${show12(tm)}</span>` : ''}</div>` +
-      `<div class="actions">${actions}</div>`;
-    row.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => act(data.date, p, b.dataset.a)));
+// Page numbers. The server decides the pages, this only draws the buttons.
+function renderPager(el, page, pages, onChange) {
+  el.replaceChildren();
+  if (pages <= 1) return;
+  const btn = (label, p, o = {}) => {
+    const b = mk('button', 'pg' + (o.cur ? ' cur' : ''), label);
+    b.disabled = !!o.dis;
+    b.setAttribute('aria-label', o.aria || 'Page ' + label);
+    if (o.cur) b.setAttribute('aria-current', 'page');
+    b.onclick = () => onChange(p);
+    return b;
+  };
+  el.append(btn('‹', page - 1, { dis: page === 1, aria: 'Previous page' }));
+  const nums = [...new Set([1, pages, page - 1, page, page + 1].filter((n) => n >= 1 && n <= pages))].sort((a, b) => a - b);
+  let last = 0;
+  nums.forEach((n) => {
+    if (n - last > 1) el.append(mk('span', 'pg-gap', '…'));
+    el.append(btn(String(n), n, { cur: n === page }));
+    last = n;
+  });
+  el.append(btn('›', page + 1, { dis: page === pages, aria: 'Next page' }));
+}
+
+/* ---------- prayer rows (Today and the calendar day panel) ---------- */
+const ACTION = { ontime: ['On time', 'act on'], qaza: ['Qaza', 'act qz'], undo: ['Undo', 'act undo'] };
+
+function renderRows(el, day) {
+  el.replaceChildren();
+  day.prayers.forEach((p) => {
+    const info = mk('div', 'pinfo');
+    const ar = mk('span', 'ar', p.ar); ar.lang = 'ar';
+    info.append(mk('span', 'name', p.name), ar);
+    if (p.startsLabel) info.appendChild(mk('span', 'time', p.startsLabel));
+    const box = mk('div', 'actions');
+    if (p.waiting) box.appendChild(mk('span', 'badge soft', 'Starts ' + p.startsLabel));
+    else if (p.status === 'ontime') box.appendChild(mk('span', 'badge', 'On time · locked'));
+    else if (p.status === 'qaza') box.appendChild(mk('span', 'badge', 'Qaza'));
+    p.actions.forEach((a) => {
+      const b = mk('button', ACTION[a][1], ACTION[a][0]);
+      b.onclick = () => act(day, p, a);
+      box.appendChild(b);
+    });
+    const row = mk('div', 'prayer ' + (p.status || ''));
+    row.append(mk('span', 'tick', '✓'), info, box);
     el.appendChild(row);
   });
 }
 
-async function act(date, p, a) {
-  const when = date === today() ? 'today' : nice(date);
+function renderNafl(el, day) {
+  el.replaceChildren();
+  day.nafl.forEach((n) => {
+    const info = mk('div', 'pinfo');
+    const ar = mk('span', 'ar', n.ar); ar.lang = 'ar';
+    info.append(mk('span', 'name', n.name), ar, mk('span', 'tip', n.tip));
+    const box = mk('div', 'actions');
+    if (n.done) box.appendChild(mk('span', 'badge', 'Prayed · locked'));
+    else if (n.canMark) {
+      const b = mk('button', 'act on', 'Mark prayed');
+      b.onclick = () => markNafl(day, n);
+      box.appendChild(b);
+    } else box.appendChild(mk('span', 'badge soft', 'Not marked'));
+    const row = mk('div', 'prayer ' + (n.done ? 'ontime' : ''));
+    row.append(mk('span', 'tick', '✓'), info, box);
+    el.appendChild(row);
+  });
+}
+
+async function act(day, p, a) {
+  const when = day.isToday ? 'today' : day.label;
   const [title, text, ok] = {
     ontime: [`Prayed ${p.name} on time?`, `This will be saved as on time for ${when}. Once confirmed it is locked and cannot be changed or removed.`, 'Yes, on time'],
     qaza: [`Mark ${p.name} as qaza?`, `${p.name} of ${when} will be saved as made up (qaza).`, 'Mark qaza'],
@@ -114,145 +156,126 @@ async function act(date, p, a) {
   }[a];
   if (!(await confirmBox(title, text, ok))) return;
   try {
-    if (a === 'undo') await api(`/${date}/undo`, { method: 'POST', body: JSON.stringify({ prayer: p.key }) });
-    else await api(`/${date}/mark`, { method: 'POST', body: JSON.stringify({ prayer: p.key, status: a }) });
+    if (a === 'undo') await api(`/prayers/${day.date}/undo`, { method: 'POST', body: JSON.stringify({ prayer: p.key }) });
+    else await api(`/prayers/${day.date}/mark`, { method: 'POST', body: JSON.stringify({ prayer: p.key, status: a }) });
     toast({ ontime: `${p.name} saved as on time`, qaza: `${p.name} saved as qaza`, undo: `${p.name} qaza removed` }[a]);
-    loadView();
-  } catch (e) {
-    toast(e.message, true);
-    loadView();
-  }
+  } catch (e) { toast(e.message, true); }
+  loadView();
+}
+
+async function markNafl(day, n) {
+  const ok = await confirmBox(`Prayed ${n.name}?`, `This will be saved for ${day.isToday ? 'today' : day.label}. Once confirmed it is locked and cannot be removed.`, 'Yes, I prayed');
+  if (!ok) return;
+  try {
+    await api(`/prayers/${day.date}/nafl`, { method: 'POST', body: JSON.stringify({ prayer: n.key }) });
+    toast(`${n.name} saved. May Allah accept it`);
+  } catch (e) { toast(e.message, true); }
+  loadView();
 }
 
 /* ---------- views ---------- */
 async function loadToday() {
-  const [d, s] = await Promise.all([api('/' + today()), api('/stats'), loadTimes()]);
-  const n = PRAYERS.filter((p) => d[p.key]).length;
-  $('todayDate').textContent = nice(today());
-  showHijriToday();
-  $('done').textContent = n;
-  $('streak').textContent = s.streak;
-  $('fill').style.width = (n / 5) * 100 + '%';
+  const d = await api('/prayers/today');
+  $('todayDate').textContent = d.label;
+  $('hijriToday').textContent = d.hijri.text + (d.hijri.events.length ? ' · ' + d.hijri.events.join(', ') : '') + (d.hijri.eid ? ' · Eid Mubarak!' : '');
+  $('done').textContent = d.done;
+  $('streak').textContent = d.streak;
+  $('fill').style.width = (d.done / d.total) * 100 + '%';
   renderRows($('todayRows'), d);
   renderNafl($('naflRow'), d);
 }
 
 async function loadCalendar() {
-  const days = await api('/month/' + ym());
-  const map = Object.fromEntries(days.map((d) => [d.date, d]));
-  const now = new Date();
-  $('monthLabel').textContent = new Date(cal.y, cal.m, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  $('nextM').disabled = cal.y === now.getFullYear() && cal.m >= now.getMonth();
+  const m = await api('/prayers/month/' + calMonth);
+  calMonth = m.month;
+  $('monthLabel').textContent = m.label;
+  $('nextM').disabled = !m.canNext;
+  $('prevM').onclick = () => { calMonth = m.prevMonth; selected = null; loadCalendar(); };
+  $('nextM').onclick = () => { calMonth = m.nextMonth; selected = null; loadCalendar(); };
+
+  if (!selected || !selected.startsWith(m.month)) selected = (m.days.find((d) => d.today) || {}).date || null;
 
   const grid = $('cal');
-  grid.innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w) => `<div class="wd">${w}</div>`).join('');
-  const lead = new Date(cal.y, cal.m, 1).getDay();
-  for (let i = 0; i < lead; i++) grid.insertAdjacentHTML('beforeend', '<div></div>');
-
-  const total = new Date(cal.y, cal.m + 1, 0).getDate();
-  for (let day = 1; day <= total; day++) {
-    const date = `${ym()}-${pad(day)}`;
-    const d = map[date] || blank(date);
-    const n = PRAYERS.filter((p) => d[p.key]).length;
-    const allOn = PRAYERS.every((p) => d[p.key] === 'ontime');
-    const future = date > today();
+  grid.replaceChildren();
+  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((w) => grid.appendChild(mk('div', 'wd', w)));
+  for (let i = 0; i < m.firstWeekday; i++) grid.appendChild(mk('div'));
+  m.days.forEach((d) => {
     let cls = 'cell';
-    if (future) cls += ' future';
-    else {
-      if (allOn) cls += ' full';
-      else if (n === 5) cls += ' made';
-      else if (n > 0) cls += ' part';
-      if (date < today() && n < 5) cls += ' miss';
-    }
-    if (date === today()) cls += ' today';
-    if (NAFL.some((p) => d[p.key])) cls += ' tj';
-    if (date === selected) cls += ' sel';
-    const b = document.createElement('button');
-    b.className = cls;
-    b.disabled = future;
-    b.setAttribute('aria-label', `${nice(date)}, ${n} of 5 prayed`);
-    b.innerHTML = `${day}<small>${n}/5</small>`;
-    b.onclick = () => { selected = date; loadCalendar(); };
+    if (d.level === 'future') cls += ' future';
+    else if (d.level !== 'none') cls += ' ' + d.level;
+    if (d.missed) cls += ' miss';
+    if (d.today) cls += ' today';
+    if (d.nafl) cls += ' tj';
+    if (d.date === selected) cls += ' sel';
+    const b = mk('button', cls);
+    b.disabled = d.level === 'future';
+    b.setAttribute('aria-label', `${d.day}, ${d.count} of 5 prayed`);
+    b.append(String(d.day), mk('small', '', `${d.count}/5`));
+    b.onclick = () => { selected = d.date; loadCalendar(); };
     grid.appendChild(b);
-  }
+  });
 
-  const showing = selected && selected.startsWith(ym());
-  $('dayTitle').textContent = showing ? nice(selected) : 'Select a day to see its prayers';
-  $('calRows').innerHTML = '';
-  $('calNafl').innerHTML = '';
-  if (showing) {
-    const day = map[selected] || blank(selected);
+  if (selected) {
+    const day = await api('/prayers/day/' + selected);
+    $('dayTitle').textContent = day.label;
+    $('dayHijri').textContent = day.hijri.text;
     renderRows($('calRows'), day);
     renderNafl($('calNafl'), day);
+  } else {
+    $('dayTitle').textContent = 'Select a day to see its prayers';
+    $('dayHijri').textContent = '';
+    $('calRows').replaceChildren();
+    $('calNafl').replaceChildren();
   }
 }
 
 async function markAll(day) {
-  const ok = await confirmBox(`Mark ${day.prayers.length} prayers as qaza?`, `All missed prayers of ${nice(day.date)} will be saved as qaza.`, 'Mark all qaza');
+  const ok = await confirmBox(`Mark ${day.prayers.length} prayers as qaza?`, `All missed prayers of ${day.label} will be saved as qaza.`, 'Mark all qaza');
   if (!ok) return;
   try {
-    for (const key of day.prayers) {
-      await api(`/${day.date}/mark`, { method: 'POST', body: JSON.stringify({ prayer: key, status: 'qaza' }) });
-    }
+    for (const p of day.prayers) await api(`/prayers/${day.date}/mark`, { method: 'POST', body: JSON.stringify({ prayer: p.key, status: 'qaza' }) });
     toast('Saved as qaza');
   } catch (e) { toast(e.message, true); }
   loadView();
 }
 
 async function loadMissed() {
-  const r = await api('/missed');
-  $('missedTotal').textContent = r.total
-    ? `${r.total} missed prayer${r.total > 1 ? 's' : ''} to make up`
-    : 'No missed prayers';
+  const r = await api(`/prayers/missed?page=${missedPage}&limit=5`);
+  missedPage = r.page;
+  $('missedTotal').textContent = r.total ? `${r.total} missed prayer${r.total > 1 ? 's' : ''} to make up` : 'No missed prayers';
   const box = $('missedList');
-  box.innerHTML = '';
-  $('missedPager').replaceChildren();
+  box.replaceChildren();
   if (!r.days.length) {
-    box.innerHTML = '<p class="empty">Nothing to make up in the last 60 days. Alhamdulillah.</p>';
+    box.appendChild(mk('p', 'empty', 'Nothing to make up in the last 60 days. Alhamdulillah.'));
+    $('missedPager').replaceChildren();
     return;
   }
-  const per = 5;
-  const pages = Math.ceil(r.days.length / per);
-  missedPage = Math.min(missedPage, pages);
-  r.days.slice((missedPage - 1) * per, missedPage * per).forEach((day) => {
-    const el = document.createElement('div');
-    el.className = 'mday';
-    el.innerHTML = `<div class="mday-h"><h3>${nice(day.date)}</h3></div><div class="chips"></div>`;
+  r.days.forEach((day) => {
+    const head = mk('div', 'mday-h');
+    head.appendChild(mk('h3', '', day.label));
     if (day.prayers.length > 1) {
-      const all = document.createElement('button');
-      all.className = 'link-btn';
-      all.textContent = 'Mark all qaza';
+      const all = mk('button', 'link-btn', 'Mark all qaza');
       all.onclick = () => markAll(day);
-      el.querySelector('.mday-h').appendChild(all);
+      head.appendChild(all);
     }
-    day.prayers.forEach((key) => {
-      const p = PRAYERS.find((x) => x.key === key);
-      const c = document.createElement('button');
-      c.className = 'chip';
-      c.textContent = `${p.name} · mark qaza`;
-      c.onclick = () => act(day.date, p, 'qaza');
-      el.querySelector('.chips').appendChild(c);
+    const chips = mk('div', 'chips');
+    day.prayers.forEach((p) => {
+      const c = mk('button', 'chip', `${p.name} · mark qaza`);
+      c.onclick = () => act({ date: day.date, label: day.label, isToday: false }, p, 'qaza');
+      chips.appendChild(c);
     });
+    const el = mk('div', 'mday');
+    el.append(head, chips);
     box.appendChild(el);
   });
-  renderPager($('missedPager'), missedPage, pages, (p) => { missedPage = p; loadMissed(); });
+  renderPager($('missedPager'), r.page, r.pages, (p) => { missedPage = p; loadMissed(); });
 }
 
 async function loadStats() {
-  const s = await api('/stats');
-  const rows = [
-    ['Current streak (all 5 on time)', `${s.streak} day${s.streak === 1 ? '' : 's'}`],
-    ['Best streak', `${s.best} day${s.best === 1 ? '' : 's'}`],
-    ['Prayed on time', s.ontime],
-    ['Made up as qaza', s.qaza],
-    ['Still missed', s.missed],
-    ['On time, last 30 days', s.percent === null ? '–' : s.percent + '%'],
-    ['Extra prayers (nafl) marked', s.nafl],
-    ['Tahajjud nights', s.tahajjud],
-    ['Tahajjud streak', `${s.tahajjudStreak} night${s.tahajjudStreak === 1 ? '' : 's'}`],
-  ];
-  $('stats').innerHTML = rows.map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
-  $('missedBy').innerHTML = PRAYERS.map((p) => `<div class="stat"><span>${p.name}</span><b>${s.missedBy[p.key]}</b></div>`).join('');
+  const s = await api('/prayers/stats');
+  const row = (k, v) => { const r = mk('div', 'stat'); r.append(mk('span', '', k), mk('b', '', v)); return r; };
+  $('stats').replaceChildren(...s.rows.map((r) => row(r.label, r.value)));
+  $('missedBy').replaceChildren(...s.missedBy.map((r) => row(r.name, String(r.count))));
 }
 
 async function loadView() {
@@ -262,72 +285,35 @@ async function loadView() {
     t.setAttribute('aria-selected', on);
   });
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'v-' + view));
-  try {
-    await { today: loadToday, calendar: () => Promise.all([loadCalendar(), loadMissed()]), missed: loadMissed, stats: loadStats, learn: loadLearn, quran: loadQuran, hijri: loadHijri, times: loadTimesView, profile: loadProfile, about: loadAbout }[view]();
-  } catch (e) {
-    if (e.message !== 'Logged out') toast(e.message, true);
-  }
+  const loaders = {
+    today: loadToday, times: loadTimesView, hijri: loadHijri, stats: loadStats, learn: loadLearn,
+    quran: loadQuran, profile: loadProfile, about: loadAbout,
+    people: loadPeople, user: loadUser, requests: loadRequests,
+    calendar: () => Promise.all([loadCalendar(), loadMissed()]),
+  };
+  try { await loaders[view](); }
+  catch (e) { if (e.message !== 'Logged out') toast(e.message, true); }
 }
 
-/* ---------- events ---------- */
-document.querySelectorAll('.nav-item').forEach((t) => (t.onclick = () => { view = t.dataset.view; closeDrawer(); window.scrollTo(0, 0); loadView(); }));
-const moveMonth = (n) => {
-  const d = new Date(cal.y, cal.m + n, 1);
-  cal = { y: d.getFullYear(), m: d.getMonth() };
-  selected = null;
-  loadCalendar();
-};
-$('prevM').onclick = () => moveMonth(-1);
-$('nextM').onclick = () => moveMonth(1);
+/* ---------- start ---------- */
+document.querySelectorAll('.nav-item').forEach((t) => {
+  t.onclick = () => { view = t.dataset.view; closeDrawer(); window.scrollTo(0, 0); loadView(); };
+});
+$('menuBtn').onclick = () => ($('drawer').classList.contains('open') ? closeDrawer() : openDrawer());
+$('scrim').onclick = closeDrawer;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 $('logout').onclick = () => { localStorage.clear(); location.href = 'index.html'; };
-
-/* ---------- prayer times (aladhan.com). Settings come from My profile ---------- */
-const DEFAULT_PREFS = { city: 'Bengaluru', state: 'Karnataka', madhab: 'hanafi', method: '1', hijriAdj: -1 };
-let prefs = Object.assign({}, DEFAULT_PREFS);
-try { prefs = Object.assign({}, DEFAULT_PREFS, JSON.parse(localStorage.getItem('prefs') || '{}')); } catch { /* use defaults */ }
-const setPrefs = (p) => { prefs = Object.assign({}, DEFAULT_PREFS, p); localStorage.setItem('prefs', JSON.stringify(prefs)); };
-let times = null;
-let timesWarned = false;
-
-async function loadTimes() {
-  times = null;
-  Object.keys(localStorage)
-    .filter((k) => k.startsWith('times') && !k.startsWith('times3|' + today()))
-    .forEach((k) => localStorage.removeItem(k));
-  const key = `times3|${today()}|${prefs.city}|${prefs.state}|${prefs.madhab}|${prefs.method}`;
-  try {
-    const cached = localStorage.getItem(key);
-    if (cached) { times = JSON.parse(cached); return; }
-    const [y, m, d] = today().split('-');
-    const base = `https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=${encodeURIComponent(prefs.city)}&country=India&method=${prefs.method}&school=${prefs.madhab === 'hanafi' ? 1 : 0}`;
-    let found = null;
-    for (const url of [prefs.state ? `${base}&state=${encodeURIComponent(prefs.state)}` : base, base]) {
-      try {
-        const r = await fetch(url);
-        const j = await r.json();
-        if (r.ok && j.data && j.data.timings) { found = j.data.timings; break; }
-      } catch { /* try the next address */ }
-    }
-    if (!found) throw new Error('no data');
-    times = {
-      fajr: found.Fajr, sunrise: found.Sunrise, dhuhr: found.Dhuhr, asr: found.Asr, maghrib: found.Maghrib,
-      isha: found.Isha, midnight: found.Midnight, lastthird: found.Lastthird,
-    };
-    localStorage.setItem(key, JSON.stringify(times));
-    timesWarned = false;
-  } catch {
-    times = null;
-    if (!timesWarned) { timesWarned = true; toast('Could not load prayer times. Check your internet and the city in My profile', true); }
-  }
-}
 
 // Refresh each minute so "Starts 4:30 pm" turns into buttons by itself
 setInterval(() => {
   if ((view === 'today' || view === 'times') && $('modal').classList.contains('hidden')) loadView();
+  refreshBadge();
 }, 60000);
 
 initLearn();
 initHijri();
 initTimes();
 initProfile();
+initSocial();
+refreshBadge();
 loadView();

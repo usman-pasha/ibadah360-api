@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const crypto = require('crypto');
 const { sendMail } = require('../utils/mailer');
+const { uniqueUsername } = require('../services/social');
 const { cleanPhone } = require('../utils/validate');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -22,8 +23,9 @@ router.post('/register', async (req, res) => {
 
     const phone = cleanPhone(req.body.phone);
     if (phone === null) return res.status(400).json({ message: 'Enter a valid Indian mobile number (10 digits starting with 6 to 9)' });
-    const user = await User.create({ name, email, phone, password: await bcrypt.hash(password, 10) });
-    res.status(201).json({ token: makeToken(user), name: user.name });
+    const username = await uniqueUsername(email.split('@')[0] || name);
+    const user = await User.create({ name, email, phone, username, password: await bcrypt.hash(password, 10) });
+    res.status(201).json({ token: makeToken(user), name: user.name, username: user.username });
   } catch (e) {
     res.status(500).json({ message: 'Could not register. Try again' });
   }

@@ -4,6 +4,10 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   phone: { type: String, default: '' },
+  // Social profile (Instagram style)
+  username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+  bio: { type: String, default: '', maxlength: 150 },
+  isPrivate: { type: Boolean, default: false }, // private: people must send a follow request
   // Namaz time settings. Defaults are for Bengaluru, Karnataka, India.
   city: { type: String, default: 'Bengaluru' },
   state: { type: String, default: 'Karnataka' },
