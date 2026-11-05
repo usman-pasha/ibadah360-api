@@ -7,6 +7,7 @@ let connTab = 'followers';
 let connPage = 1;
 let reqPage = 1;
 let searchTimer;
+let userRoot = false; // true when the profile was opened from the menu (my own profile)
 
 const avatarEl = (name, cls) => mk('div', 'avatar ' + (cls || ''), initials(name));
 
@@ -19,8 +20,9 @@ async function refreshBadge() {
   try { setBadge((await api('/follow/summary')).requests); } catch (e) { /* ignore */ }
 }
 
-function openUser(username, tab) {
-  if (view !== 'user') backView = view;
+function openUser(username, tab, root) {
+  userRoot = !!root;
+  if (!userRoot && view !== 'user') backView = view;
   viewUser = username;
   connTab = tab || 'followers';
   connPage = 1;
@@ -55,7 +57,7 @@ function followButton(u, after, header) {
   if (r.self) {
     if (!header) return mk('span', 'src', 'You');
     const b = mk('button', 'fbtn out', 'Edit profile');
-    b.onclick = () => { view = 'profile'; window.scrollTo(0, 0); loadView(); };
+    b.onclick = () => { view = 'editprofile'; window.scrollTo(0, 0); loadView(); };
     return b;
   }
   const label = r.following ? 'Following' : r.requested ? 'Requested' : r.followsYou ? 'Follow back' : 'Follow';
@@ -132,6 +134,7 @@ async function loadUser() {
     view = backView === 'user' ? 'people' : backView;
     return loadView();
   }
+  $('uBack').hidden = userRoot;
   $('uAvatar').textContent = initials(p.name);
   $('uName').textContent = p.name;
   $('uHandle').textContent = '@' + p.username + (p.isPrivate ? ' · Private account' : '');

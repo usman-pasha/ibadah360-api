@@ -50,4 +50,17 @@ const duas = [
   { cat: 'From the Quran', title: 'To keep up prayer', src: 'Quran 14:40', ar: 'رَبِّ ٱجْعَلْنِي مُقِيمَ ٱلصَّلَاةِ وَمِن ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ', tr: "Rabbij-'alni muqimas-salati wa min dhurriyyati, Rabbana wa taqabbal du'a.", en: 'My Lord, make me one who keeps up prayer, and my children too. Our Lord, accept my prayer.' },
 ].map((d, i) => ({ order: i + 1, ...d }));
 
-module.exports = { prayerDefs, hijriEvents, dailyAyahs, duas };
+// The 30 paras (juz). Standard Madani / Tanzil division. A few Indian printed Qurans start a para one ayah
+// earlier (for example para 4 at 3:92). Change startSurah / startAyah here and run `npm run seed` if you prefer that.
+const paras = [
+  [1, 'Alif Lam Meem', 1, 1], [2, 'Sayaqool', 2, 142], [3, 'Tilkal Rusul', 2, 253], [4, 'Lan Tanaloo', 3, 93],
+  [5, 'Wal Muhsanat', 4, 24], [6, 'La Yuhibbullah', 4, 148], [7, 'Wa Iza Samiu', 5, 82], [8, 'Wa Lau Annana', 6, 111],
+  [9, 'Qalal Malao', 7, 88], [10, "Wa A'lamu", 8, 41], [11, 'Yatazeroon', 9, 93], [12, 'Wa Ma Min Dabbah', 11, 6],
+  [13, "Wa Ma Ubarri'u", 12, 53], [14, 'Rubama', 15, 1], [15, 'Subhanalladhi', 17, 1], [16, 'Qal Alam', 18, 75],
+  [17, 'Iqtaraba', 21, 1], [18, 'Qad Aflaha', 23, 1], [19, 'Wa Qalalladhina', 25, 21], [20, "A'man Khalaq", 27, 56],
+  [21, 'Utlu Ma Oohiya', 29, 46], [22, 'Wa Man Yaqnut', 33, 31], [23, 'Wa Mali', 36, 28], [24, 'Faman Azlam', 39, 32],
+  [25, 'Ilayhi Yuraddu', 41, 47], [26, 'Ha Meem', 46, 1], [27, 'Qala Fama Khatbukum', 51, 31], [28, 'Qad Sami Allah', 58, 1],
+  [29, 'Tabarakalladhi', 67, 1], [30, 'Amma', 78, 1],
+].map(([number, name, startSurah, startAyah]) => ({ number, name, startSurah, startAyah }));
+
+module.exports = { prayerDefs, hijriEvents, dailyAyahs, duas, paras };

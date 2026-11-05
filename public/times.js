@@ -30,5 +30,5 @@ async function loadTimesView() {
 }
 
 function initTimes() {
-  $('tGoProfile').onclick = () => { view = 'profile'; window.scrollTo(0, 0); loadView(); };
+  $('tGoProfile').onclick = () => { view = 'account'; window.scrollTo(0, 0); loadView(); };
 }

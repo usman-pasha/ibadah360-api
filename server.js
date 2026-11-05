@@ -28,6 +28,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 60 }), require('./routes/auth'));
 app.use('/api/meta', require('./routes/meta'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/account', require('./routes/account'));
 app.use('/api/users/search', rateLimit({ windowMs: 60 * 1000, limit: 60 })); // stops people scraping the user list
 app.use('/api/users', require('./routes/users'));
 app.use('/api/follow', require('./routes/follow'));

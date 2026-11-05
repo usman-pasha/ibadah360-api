@@ -86,11 +86,23 @@ function ensureSurah(n) {
   return inflight[n];
 }
 
-async function surahPage(n, { page, limit, script, lang }) {
+// One ayah as the clients receive it. The first ayah of a surah carries the surah heading and its Bismillah.
+function shapeAyah(s, a, useIp, lang) {
+  return {
+    surah: s.number, number: a.number, key: `${s.number}:${a.number}`,
+    arabic: useIp && a.indopak ? a.indopak : a.uthmani,
+    translation: lang === 'none' ? null : (a.tr && a.tr[lang]) || null,
+    surahStart: a.number === 1 ? { number: s.number, name: s.name, englishName: s.englishName, englishNameTranslation: s.englishNameTranslation, revelationType: s.revelationType, bismillah: s.bismillah || null } : null,
+  };
+}
+
+// at = an ayah number: open the page that contains it (used to continue where the person stopped)
+async function surahPage(n, { page, limit, at, script, lang }) {
   const s = await ensureSurah(n);
   if (!s) return null;
   const pages = Math.max(1, Math.ceil(s.numberOfAyahs / limit));
-  const p = Math.min(Math.max(1, page), pages);
+  const wanted = at ? Math.ceil(Math.min(Math.max(1, at), s.numberOfAyahs) / limit) : page;
+  const p = Math.min(Math.max(1, wanted), pages);
   const docs = await Ayah.find({ surah: n }).sort({ number: 1 }).skip((p - 1) * limit).limit(limit).lean();
   const useIp = script === 'indopak' && s.loaded.indopak;
   return {
@@ -98,7 +110,7 @@ async function surahPage(n, { page, limit, script, lang }) {
     script: useIp ? 'indopak' : 'uthmani', scriptFallback: script === 'indopak' && !useIp,
     language: lang, translationMissing: lang !== 'none' && docs.some((a) => !(a.tr && a.tr[lang])),
     page: p, pages, limit, total: s.numberOfAyahs,
-    ayahs: docs.map((a) => ({ number: a.number, key: `${n}:${a.number}`, arabic: useIp && a.indopak ? a.indopak : a.uthmani, translation: lang === 'none' ? null : (a.tr && a.tr[lang]) || null })),
+    ayahs: docs.map((a) => shapeAyah(s, a, useIp, lang)),
   };
 }
 
@@ -117,4 +129,4 @@ async function ayahOfTheDay(dayNumber, shift, script, lang) {
   };
 }
 
-module.exports = { ensureSurahList, ensureSurah, surahPage, ayahOfTheDay };
+module.exports = { ensureSurahList, ensureSurah, surahPage, ayahOfTheDay, shapeAyah };

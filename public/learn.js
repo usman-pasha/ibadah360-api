@@ -1,11 +1,18 @@
-/* Ayah of the day, duas, the Quran reader and About us. Everything comes from the API. */
-let ayahShift = 0;
+/* Ayah of the day, duas, the Quran reader and About us. Everything comes from the API.
+   The Quran reader saves where you stopped (and your script, translation and text size) on the server,
+   so it opens at the same place on any phone or computer. */
 let duaPage = 1;
+let ayahShift = 0;
+
+let qState = null;   // saved place + choices, from GET /api/quran/progress
+let qCur = null;     // what is on screen: { mode: 'para' | 'surah', n, page, at }
 let lastQuran = null;
-const qs = { n: Number(localStorage.getItem('q.n')) || 1, page: Number(localStorage.getItem('q.page')) || 1 };
-let qSize = Number(localStorage.getItem('q.size')) || 1.7;
-let qScript = localStorage.getItem('q.script') || 'indopak';
-let qLang = localStorage.getItem('q.lang') || 'en';
+let qParas = null;
+let qSurahs = null;
+let qSavePending = null;
+let qSaveTimer;
+
+const getQState = async () => { if (!qState) qState = await api('/quran/progress'); return qState; };
 
 const arabic = (text, script, size) => {
   const p = mk('p', 'ayah-ar ' + script, text);
@@ -18,7 +25,8 @@ const arabic = (text, script, size) => {
 async function loadAyah() {
   const box = $('ayah');
   try {
-    const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${qLang}&script=${qScript}`);
+    const st = await getQState().catch(() => ({ script: 'indopak', lang: 'en' }));
+    const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${st.lang}&script=${st.script}`);
     box.replaceChildren(arabic(a.arabic, a.script));
     if (a.translation) box.appendChild(mk('p', '', a.translation));
     box.appendChild(mk('p', 'src', `Surah ${a.surah.englishName} ${a.key}`));
@@ -51,28 +59,85 @@ async function loadLearn() {
   await renderDuas();
 }
 
-/* ---------- Quran ---------- */
+/* ---------- Quran: saving where you stopped ---------- */
+function scheduleQuranSave() {
+  const f = lastQuran && lastQuran.ayahs[0];
+  if (!f) return;
+  qSavePending = { mode: qCur.mode, surah: f.surah, ayah: f.number };
+  clearTimeout(qSaveTimer);
+  qSaveTimer = setTimeout(flushQuranSave, 1200);
+}
+function flushQuranSave() {
+  clearTimeout(qSaveTimer);
+  if (!qSavePending) return;
+  const body = JSON.stringify(qSavePending);
+  qSavePending = null;
+  api('/quran/progress', { method: 'PUT', body, keepalive: true }).then((p) => { qState = p; }).catch(() => {});
+}
+window.addEventListener('pagehide', flushQuranSave);
+
+async function saveChoice(part) {
+  try { qState = await api('/quran/progress', { method: 'PUT', body: JSON.stringify(part) }); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---------- Quran: showing a page ---------- */
+function fillSelect(sel, items, value) {
+  sel.replaceChildren(...items.map(([v, label]) => { const o = mk('option', '', label); o.value = v; return o; }));
+  sel.value = value;
+}
+
+function syncQuranControls() {
+  const para = qCur.mode === 'para';
+  $('modePara').classList.toggle('on', para);
+  $('modeSurah').classList.toggle('on', !para);
+  $('navLabel').textContent = para ? 'Para (Juz)' : 'Surah';
+  if ($('navSel').dataset.mode !== qCur.mode) {
+    const items = para
+      ? qParas.map((p) => [p.number, `Para ${p.number} · ${p.name}`])
+      : qSurahs.map((s) => [s.number, `${s.number}. ${s.englishName} (${s.name})`]);
+    fillSelect($('navSel'), items, qCur.n);
+    $('navSel').dataset.mode = qCur.mode;
+  }
+  $('navSel').value = qCur.n;
+}
+
 function drawQuran() {
   const d = lastQuran;
   const meta = metaCache;
+  const size = qState.size;
   const body = $('quranBody');
   body.replaceChildren();
-  const s = d.surah;
+
   const head = mk('div', 'card');
-  head.append(mk('h3', '', `${s.number}. ${s.englishName} · ${s.englishNameTranslation}`), mk('p', 'src', `${s.revelationType} · ${s.numberOfAyahs} ayahs · page ${d.page} of ${d.pages}`));
-  if (d.scriptFallback) head.appendChild(mk('p', 'src', 'The Indian script is not available for this surah yet, so the Madani script is shown.'));
-  if (d.translationMissing) head.appendChild(mk('p', 'src', 'This translation is not available for this surah yet.'));
+  if (qCur.mode === 'para') {
+    const p = d.para;
+    head.append(mk('h3', '', `Para ${p.number} · ${p.name}`),
+      mk('p', 'src', `${p.start.surahName} ${p.start.surah}:${p.start.ayah} to ${p.end.surahName} ${p.end.surah}:${p.end.ayah} · ${p.ayahCount} ayahs · page ${d.page} of ${d.pages}`));
+  } else {
+    const s = d.surah;
+    head.append(mk('h3', '', `${s.number}. ${s.englishName} · ${s.englishNameTranslation}`),
+      mk('p', 'src', `${s.revelationType} · ${s.numberOfAyahs} ayahs · page ${d.page} of ${d.pages}`));
+  }
+  if (d.scriptFallback) head.appendChild(mk('p', 'src', 'The Indian script is not available here yet, so the Madani script is shown.'));
+  if (d.translationMissing) head.appendChild(mk('p', 'src', 'This translation is not available here yet.'));
   body.appendChild(head);
 
   const L = meta.quran.languages.find((l) => l.code === d.language);
-  d.ayahs.forEach((a, i) => {
-    const card = mk('div', 'card');
-    if (i === 0 && d.page === 1 && s.bismillah) {
-      const b = arabic(s.bismillah, d.script, qSize);
-      b.classList.add('bism');
-      card.appendChild(b);
+  d.ayahs.forEach((a) => {
+    // a new surah starts here: show its name (in para mode) and its Bismillah
+    if (a.surahStart && (qCur.mode === 'para' || a.surahStart.bismillah)) {
+      const h = mk('div', 'card surah-head');
+      if (qCur.mode === 'para') h.appendChild(mk('h3', '', `${a.surahStart.number}. ${a.surahStart.englishName} · ${a.surahStart.englishNameTranslation}`));
+      if (a.surahStart.bismillah) {
+        const b = arabic(a.surahStart.bismillah, d.script, size);
+        b.classList.add('bism');
+        h.appendChild(b);
+      }
+      body.appendChild(h);
     }
-    card.append(mk('span', 'ayah-no', a.key), arabic(a.arabic, d.script, qSize));
+    const card = mk('div', 'card');
+    card.append(mk('span', 'ayah-no', a.key), arabic(a.arabic, d.script, size));
     if (a.translation && L) {
       const tr = mk('p', 'tr-text' + (L.code === 'ur' ? ' urdu' : ''), a.translation);
       tr.lang = L.code; tr.dir = L.dir;
@@ -80,31 +145,34 @@ function drawQuran() {
     }
     body.appendChild(card);
   });
-  renderPager($('quranPager'), d.page, d.pages, (p) => { qs.page = p; loadQuran(); window.scrollTo({ top: 0 }); });
-}
-
-function fillSelect(sel, items, value) {
-  sel.replaceChildren(...items.map(([v, label]) => { const o = mk('option', '', label); o.value = v; return o; }));
-  sel.value = value;
+  renderPager($('quranPager'), d.page, d.pages, (p) => { qCur.page = p; qCur.at = null; loadQuran(); window.scrollTo({ top: 0 }); });
 }
 
 async function loadQuran() {
   const body = $('quranBody');
   try {
     const meta = await getMeta();
-    if (!$('surahSel').options.length) {
-      const surahs = await api('/quran/surahs');
-      fillSelect($('surahSel'), surahs.map((s) => [s.number, `${s.number}. ${s.englishName} (${s.name})`]), qs.n);
-      fillSelect($('scriptSel'), meta.quran.scripts.map((s) => [s.code, s.name]), qScript);
-      fillSelect($('langSel'), [...meta.quran.languages.map((l) => [l.code, l.name]), ['none', 'No translation']], qLang);
+    const st = await getQState();
+    if (!qParas) {
+      [qParas, qSurahs] = await Promise.all([api('/quran/paras'), api('/quran/surahs')]);
+      fillSelect($('scriptSel'), meta.quran.scripts.map((s) => [s.code, s.name]), st.script);
+      fillSelect($('langSel'), [...meta.quran.languages.map((l) => [l.code, l.name]), ['none', 'No translation']], st.lang);
     }
-    $('surahSel').value = qs.n; $('scriptSel').value = qScript; $('langSel').value = qLang;
+    if (!qCur) {
+      // first time this visit: open exactly where the person stopped
+      qCur = { mode: st.mode, n: st.mode === 'para' ? st.para : st.surah, page: 1, at: st.mode === 'para' ? `${st.surah}:${st.ayah}` : String(st.ayah) };
+      $('resumeNote').textContent = st.started ? `Continuing where you stopped: ${st.label}` : 'Your place is saved automatically, so next time you continue where you stopped.';
+    }
+    syncQuranControls();
+    $('scriptSel').value = st.script;
+    $('langSel').value = st.lang;
     body.replaceChildren(mk('p', 'hint', 'Loading… the first time a surah is opened it can take a few seconds.'));
-    lastQuran = await api(`/quran/surah/${qs.n}?page=${qs.page}&limit=${meta.quran.perPage}&script=${qScript}&lang=${qLang}`);
-    qs.page = lastQuran.page;
-    localStorage.setItem('q.n', qs.n);
-    localStorage.setItem('q.page', qs.page);
+    const where = qCur.at ? `&at=${encodeURIComponent(qCur.at)}` : `&page=${qCur.page}`;
+    lastQuran = await api(`/quran/${qCur.mode}/${qCur.n}?limit=${meta.quran.perPage}&script=${st.script}&lang=${st.lang}${where}`);
+    qCur.page = lastQuran.page;
+    qCur.at = null;
     drawQuran();
+    scheduleQuranSave();
   } catch (e) {
     body.replaceChildren(mk('p', 'empty', e.message));
     const b = mk('button', 'btn', 'Try again');
@@ -114,10 +182,26 @@ async function loadQuran() {
   }
 }
 
+// Switch between para and surah, staying at the same place in the Quran
+async function switchMode(mode) {
+  if (!lastQuran || qCur.mode === mode) return;
+  const f = lastQuran.ayahs[0];
+  try {
+    if (mode === 'para') {
+      const l = await api(`/quran/locate?surah=${f.surah}&ayah=${f.number}`);
+      qCur = { mode, n: l.para, page: 1, at: `${f.surah}:${f.number}` };
+    } else qCur = { mode, n: f.surah, page: 1, at: String(f.number) };
+    loadQuran();
+  } catch (e) { toast(e.message, true); }
+}
+
+let sizeTimer;
 function setQSize(delta) {
-  qSize = Math.min(3, Math.max(1.1, Math.round((qSize + delta) * 10) / 10));
-  localStorage.setItem('q.size', qSize);
-  if (lastQuran) drawQuran();
+  if (!qState || !lastQuran) return;
+  qState.size = Math.min(3, Math.max(1.1, Math.round((qState.size + delta) * 10) / 10));
+  drawQuran();
+  clearTimeout(sizeTimer);
+  sizeTimer = setTimeout(() => saveChoice({ size: qState.size }), 600);
 }
 
 /* ---------- About us ---------- */
@@ -168,9 +252,11 @@ async function loadAbout() {
 function initLearn() {
   $('duaSearch').oninput = () => { duaPage = 1; renderDuas().catch((e) => toast(e.message, true)); };
   $('anotherAyah').onclick = () => { ayahShift++; loadAyah(); };
-  $('surahSel').onchange = () => { qs.n = Number($('surahSel').value); qs.page = 1; loadQuran(); };
-  $('scriptSel').onchange = () => { qScript = $('scriptSel').value; localStorage.setItem('q.script', qScript); loadQuran(); };
-  $('langSel').onchange = () => { qLang = $('langSel').value; localStorage.setItem('q.lang', qLang); loadQuran(); };
+  $('modePara').onclick = () => switchMode('para');
+  $('modeSurah').onclick = () => switchMode('surah');
+  $('navSel').onchange = () => { qCur = { mode: qCur.mode, n: Number($('navSel').value), page: 1, at: null }; loadQuran(); window.scrollTo({ top: 0 }); };
+  $('scriptSel').onchange = async () => { await saveChoice({ script: $('scriptSel').value }); loadQuran(); };
+  $('langSel').onchange = async () => { await saveChoice({ lang: $('langSel').value }); loadQuran(); };
   $('fontPlus').onclick = () => setQSize(0.2);
   $('fontMinus').onclick = () => setQSize(-0.2);
 }

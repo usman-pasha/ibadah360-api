@@ -31,7 +31,8 @@
       <button class="nav-item" data-view="requests">Follow requests <span class="count-badge" id="reqBadge" hidden>0</span></button>
       <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
-      <button class="nav-item" data-view="profile">My profile</button>
+      <button class="nav-item" data-view="myprofile">My profile</button>
+      <button class="nav-item" data-view="account">Account</button>
       <button class="nav-item" data-view="about">About us</button>
       <hr />
       <button class="drawer-out" id="logout">Log out</button>
@@ -54,7 +55,7 @@
       <p class="hint" id="timesSub"></p>
       <div id="timesBody"></div>
       <p class="src" id="timesNote"></p>
-      <button class="link-btn" id="tGoProfile">Change city and settings in My profile</button>
+      <button class="link-btn" id="tGoProfile">Change city and settings in Account</button>
       <p class="src" id="timesSource"></p>
     </section>
 
@@ -106,7 +107,7 @@
       <h2 class="sub-h">Coming up</h2>
       <div class="stats" id="hUpcoming"></div>
       <p class="hint">Dates follow the Umm al-Qura calendar with your moon sighting setting (by default 1 day behind Saudi Arabia, as is usual in India). Ramadan and the Eids depend on the moon, so please confirm with your local masjid or Hilal committee.
-        <button class="link-btn" id="hGoProfile">Change in My profile</button></p>
+        <button class="link-btn" id="hGoProfile">Change in Account</button></p>
     </section>
 
     <section class="view hidden" id="v-stats">
@@ -169,8 +170,12 @@
 
     <section class="view hidden" id="v-quran">
       <h2 class="date-h">The Holy Quran</h2>
-      <label for="surahSel">Surah</label>
-      <select id="surahSel" aria-label="Choose a surah"></select>
+      <div class="seg" role="group" aria-label="Read by">
+        <button id="modePara" class="on">Para (Juz)</button>
+        <button id="modeSurah">Surah</button>
+      </div>
+      <label for="navSel" id="navLabel">Para (Juz)</label>
+      <select id="navSel" aria-label="Choose where to read"></select>
       <div class="qrow">
         <div><label for="scriptSel">Script style</label><select id="scriptSel"></select></div>
         <div><label for="langSel">Translation</label><select id="langSel"></select></div>
@@ -179,45 +184,47 @@
         <button class="link-btn" id="fontMinus" aria-label="Smaller Arabic text">A−</button>
         <button class="link-btn" id="fontPlus" aria-label="Larger Arabic text">A+</button>
       </div>
+      <p class="hint" id="resumeNote"></p>
       <div id="quranBody"></div>
       <div class="pager" id="quranPager"></div>
-      <p class="src">The Quran is saved in the Ibadah360 database. The first time a surah is opened it can take a few seconds. Your place is remembered.</p>
+      <p class="src">The Quran is saved in the Ibadah360 database. The first time a surah is opened it can take a few seconds. Where you stop is saved automatically.</p>
     </section>
 
-    <section class="view hidden" id="v-profile">
-      <div class="card prof-head">
-        <div class="avatar avatar-lg" id="avatarLg"></div>
-        <h2 class="date-h" id="pName"></h2>
-        <p class="src" id="pHandle"></p>
-        <p class="src" id="pSince"></p>
+    <section class="view hidden" id="v-editprofile">
+      <button class="link-btn" id="epBack">‹ Back to profile</button>
+      <h2 class="date-h">Edit profile</h2>
+      <p class="hint">This is what other people see.</p>
+      <div class="card">
+        <div class="avatar avatar-lg" id="epAvatar"></div>
+        <label for="epName">Full name</label>
+        <input id="epName" autocomplete="name" />
+        <label for="epUsername">Username</label>
+        <input id="epUsername" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <label for="epBio">Bio</label>
+        <textarea id="epBio" rows="3" placeholder="Tell people a little about you"></textarea>
+        <button class="btn" id="epSave">Save profile</button>
+      </div>
+    </section>
+
+    <section class="view hidden" id="v-account">
+      <h2 class="date-h">Account</h2>
+      <p class="hint">Private details and settings. Other people never see these.</p>
+
+      <h2 class="sub-h">Contact</h2>
+      <div class="card">
+        <label for="acEmail">Email</label>
+        <input id="acEmail" disabled />
+        <label for="acPhone">Mobile number</label>
+        <input id="acPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
+        <button class="btn" id="acSave">Save mobile number</button>
       </div>
 
-      <h2 class="sub-h">Personal details</h2>
+      <h2 class="sub-h">Privacy</h2>
       <div class="card">
-        <label for="pNameIn">Full name</label>
-        <input id="pNameIn" autocomplete="name" />
-        <label for="pUsername">Username</label>
-        <input id="pUsername" autocomplete="username" autocapitalize="none" spellcheck="false" />
-        <label for="pBio">Bio</label>
-        <textarea id="pBio" rows="3" placeholder="Tell people a little about you"></textarea>
-        <label for="pEmail">Email</label>
-        <input id="pEmail" disabled />
-        <label for="pPhone">Mobile number</label>
-        <input id="pPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210" />
-        <button class="btn" id="pSave">Save details</button>
-      </div>
-
-      <h2 class="sub-h">Account privacy</h2>
-      <div class="card">
-        <label class="switch-row" for="pPrivate">
+        <label class="switch-row" for="acPrivate">
           <span><b>Private account</b><small class="src">When on, people must send a follow request and you approve them. When off, anyone can follow you.</small></span>
-          <input type="checkbox" id="pPrivate" role="switch" />
+          <input type="checkbox" id="acPrivate" role="switch" />
         </label>
-        <div class="counts">
-          <button id="pFollowers"></button>
-          <button id="pFollowing"></button>
-        </div>
-        <button class="btn" id="pViewPublic">See my profile as others see it</button>
       </div>
 
       <h2 class="sub-h">Namaz time settings</h2>

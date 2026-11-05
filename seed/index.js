@@ -2,6 +2,7 @@ const PrayerDef = require('../models/PrayerDef');
 const HijriEvent = require('../models/HijriEvent');
 const DailyAyah = require('../models/DailyAyah');
 const Dua = require('../models/Dua');
+const Para = require('../models/Para');
 const About = require('../models/About');
 const content = require('./contentSeed');
 const aboutSeed = require('./aboutSeed');
@@ -10,7 +11,7 @@ const aboutSeed = require('./aboutSeed');
 // force = true:  reset every content collection to the defaults (npm run seed).
 async function seedAll({ force = false } = {}) {
   const done = [];
-  const tables = [['prayerdefs', PrayerDef, content.prayerDefs], ['hijrievents', HijriEvent, content.hijriEvents], ['dailyayahs', DailyAyah, content.dailyAyahs], ['duas', Dua, content.duas]];
+  const tables = [['prayerdefs', PrayerDef, content.prayerDefs], ['hijrievents', HijriEvent, content.hijriEvents], ['dailyayahs', DailyAyah, content.dailyAyahs], ['duas', Dua, content.duas], ['paras', Para, content.paras]];
   for (const [name, Model, docs] of tables) {
     if (force) await Model.deleteMany({});
     else if ((await Model.estimatedDocumentCount()) > 0) continue;

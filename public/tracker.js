@@ -279,15 +279,16 @@ async function loadStats() {
 }
 
 async function loadView() {
+  if (view !== 'quran') flushQuranSave(); // save where the person stopped reading
   document.querySelectorAll('.nav-item').forEach((t) => {
-    const on = t.dataset.view === view;
+    const on = t.dataset.view === (view === 'user' && userRoot ? 'myprofile' : view);
     t.classList.toggle('active', on);
     t.setAttribute('aria-selected', on);
   });
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'v-' + view));
   const loaders = {
     today: loadToday, times: loadTimesView, hijri: loadHijri, stats: loadStats, learn: loadLearn,
-    quran: loadQuran, profile: loadProfile, about: loadAbout,
+    quran: loadQuran, editprofile: loadEditProfile, account: loadAccount, about: loadAbout,
     people: loadPeople, user: loadUser, requests: loadRequests,
     calendar: () => Promise.all([loadCalendar(), loadMissed()]),
   };
@@ -297,7 +298,10 @@ async function loadView() {
 
 /* ---------- start ---------- */
 document.querySelectorAll('.nav-item').forEach((t) => {
-  t.onclick = () => { view = t.dataset.view; closeDrawer(); window.scrollTo(0, 0); loadView(); };
+  t.onclick = () => {
+    if (t.dataset.view === 'myprofile') { closeDrawer(); openOwnProfile(); return; }
+    view = t.dataset.view; closeDrawer(); window.scrollTo(0, 0); loadView();
+  };
 });
 $('menuBtn').onclick = () => ($('drawer').classList.contains('open') ? closeDrawer() : openDrawer());
 $('scrim').onclick = closeDrawer;

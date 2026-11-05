@@ -391,3 +391,10 @@ body { background: linear-gradient(165deg, #ffeaf3 0%, #fff7fa 45%, #ffe6f0 100%
   .person-actions { width: 100%; justify-content: flex-end; }
   .counts { gap: 8px; }
 }
+
+/* Para / Surah switch, surah headings */
+.seg { display: flex; gap: 4px; padding: 4px; margin: 10px 0 6px; background: var(--brand-soft); border-radius: 14px; }
+.seg button { flex: 1; padding: 11px 8px; border: 0; border-radius: 10px; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg button.on { background: #fff; color: var(--brand); box-shadow: 0 1px 6px rgba(176, 48, 104, .2); }
+.surah-head { text-align: center; background: linear-gradient(180deg, #fff, #fff4f8); }
+.surah-head h3 { font-family: "Amiri", Georgia, serif; font-size: 1.25rem; color: var(--brand); }

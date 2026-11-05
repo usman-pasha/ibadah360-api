@@ -2,24 +2,77 @@ const router = require('express').Router();
 const auth = require('../middleware/auth');
 const safe = require('../utils/safe');
 const Surah = require('../models/Surah');
+const Progress = require('../models/ReadingProgress');
 const { ensureSurahList, surahPage, ayahOfTheDay } = require('../services/quran');
+const para = require('../services/para');
 const { LANGUAGES, SCRIPTS, PER_PAGE } = require('../config/quran');
 const { userNow, dayNumber } = require('../utils/dates');
 
 const int = (v, d, min, max) => { const n = parseInt(v, 10); return isNaN(n) ? d : Math.min(max, Math.max(min, n)); };
+const num = (v, max) => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 1 && n <= max ? n : 0; }; // 0 = not valid
 const lang = (v) => (v === 'none' || LANGUAGES.some((l) => l.code === v) ? v : 'en');
 const script = (v) => (SCRIPTS.some((s) => s.code === v) ? v : 'indopak');
+const bad = (res, message) => res.status(400).json({ message });
 
 router.get('/surahs', auth, safe(async (req, res) => {
   await ensureSurahList();
   res.json(await Surah.find().sort({ number: 1 }).select('number name englishName englishNameTranslation revelationType numberOfAyahs -_id').lean());
 }));
 
-// /api/quran/surah/2?page=1&limit=10&script=indopak&lang=ur
+// /api/quran/surah/2?page=1&limit=10&script=indopak&lang=ur   (or at=150 to open the page holding ayah 150)
 router.get('/surah/:n', auth, safe(async (req, res) => {
-  const n = int(req.params.n, 0, 0, 114);
-  if (!n) return res.status(400).json({ message: 'Surah number must be 1 to 114' });
-  res.json(await surahPage(n, { page: int(req.query.page, 1, 1, 10000), limit: int(req.query.limit, PER_PAGE, 1, 50), script: script(req.query.script), lang: lang(req.query.lang) }));
+  const n = num(req.params.n, 114);
+  if (!n) return bad(res, 'Surah number must be 1 to 114');
+  res.json(await surahPage(n, { page: int(req.query.page, 1, 1, 10000), limit: int(req.query.limit, PER_PAGE, 1, 50), at: int(req.query.at, 0, 0, 286), script: script(req.query.script), lang: lang(req.query.lang) }));
+}));
+
+router.get('/paras', auth, safe(async (req, res) => res.json(await para.listParas())));
+
+// /api/quran/para/5?page=1&limit=10&script=indopak&lang=ur   (or at=4:30 to open the page holding that ayah)
+router.get('/para/:n', auth, safe(async (req, res) => {
+  const n = num(req.params.n, 30);
+  if (!n) return bad(res, 'Para number must be 1 to 30');
+  res.json(await para.paraPage(n, { page: int(req.query.page, 1, 1, 10000), limit: int(req.query.limit, PER_PAGE, 1, 50), at: /^\d+:\d+$/.test(req.query.at || '') ? req.query.at : null, script: script(req.query.script), lang: lang(req.query.lang) }));
+}));
+
+// Which para holds this ayah?
+router.get('/locate', auth, safe(async (req, res) => {
+  const s = num(req.query.surah, 114);
+  const a = num(req.query.ayah, 286);
+  if (!s || !a) return bad(res, 'Give surah and ayah');
+  res.json({ para: await para.locate(s, a) });
+}));
+
+/* ---------- where the person stopped reading, and their reading choices ---------- */
+const DEFAULTS = { mode: 'para', surah: 1, ayah: 1, script: 'indopak', lang: 'en', size: 1.7 };
+
+async function progressView(userId) {
+  const row = await Progress.findOne({ user: userId }).lean();
+  const p = { ...DEFAULTS, ...(row ? { mode: row.mode, surah: row.surah, ayah: row.ayah, script: row.script, lang: row.lang, size: row.size } : {}) };
+  const { list, name } = await para.getRanges();
+  const paraNo = await para.locate(p.surah, p.ayah);
+  const pr = list[paraNo - 1];
+  return { ...p, started: !!row, para: paraNo, paraName: pr.name, label: `Para ${paraNo} (${pr.name}) · ${name[p.surah]} ${p.surah}:${p.ayah}` };
+}
+
+router.get('/progress', auth, safe(async (req, res) => res.json(await progressView(req.userId))));
+
+router.put('/progress', auth, safe(async (req, res) => {
+  const b = req.body;
+  const set = {};
+  if (b.mode !== undefined) { if (!['para', 'surah'].includes(b.mode)) return bad(res, 'Mode must be para or surah'); set.mode = b.mode; }
+  if (b.surah !== undefined || b.ayah !== undefined) {
+    const s = Number(b.surah);
+    const a = Number(b.ayah);
+    const { count } = await para.getRanges();
+    if (!Number.isInteger(s) || s < 1 || s > 114 || !Number.isInteger(a) || a < 1 || a > count[s]) return bad(res, 'That surah and ayah do not exist');
+    set.surah = s; set.ayah = a;
+  }
+  if (b.script !== undefined) { if (!SCRIPTS.some((x) => x.code === b.script)) return bad(res, 'Unknown script'); set.script = b.script; }
+  if (b.lang !== undefined) { if (!(b.lang === 'none' || LANGUAGES.some((l) => l.code === b.lang))) return bad(res, 'Unknown translation'); set.lang = b.lang; }
+  if (b.size !== undefined) { const z = Number(b.size); if (!(z >= 1.1 && z <= 3)) return bad(res, 'Text size must be between 1.1 and 3'); set.size = z; }
+  await Progress.findOneAndUpdate({ user: req.userId }, { $set: set }, { upsert: true, new: true, setDefaultsOnInsert: true });
+  res.json(await progressView(req.userId));
 }));
 
 router.get('/ayah-of-the-day', auth, safe(async (req, res) => {

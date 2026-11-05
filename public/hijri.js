@@ -52,5 +52,5 @@ async function loadHijri() {
 
 function initHijri() {
   $('hToday').onclick = () => { hOffset = 0; hSel = null; loadHijri(); };
-  $('hGoProfile').onclick = () => { view = 'profile'; window.scrollTo(0, 0); loadView(); };
+  $('hGoProfile').onclick = () => { view = 'account'; window.scrollTo(0, 0); loadView(); };
 }
