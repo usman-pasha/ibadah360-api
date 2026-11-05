@@ -38,6 +38,9 @@ app.use('/api/times', require('./routes/times'));
 app.use('/api/hijri', require('./routes/hijri'));
 app.use('/api/quran', require('./routes/quran'));
 app.use('/api/duas', require('./routes/duas'));
+app.use('/api/learn', require('./routes/learn'));
+app.use('/api/report', require('./routes/report'));
+app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);

@@ -3,7 +3,7 @@
 const Para = require('../models/Para');
 const Surah = require('../models/Surah');
 const Ayah = require('../models/Ayah');
-const { ensureSurahList, ensureSurah, shapeAyah } = require('./quran');
+const { ensureSurahList, ensureSurah, shapeAyah, getOffsets, audioFor } = require('./quran');
 
 let cache = null;
 let cacheAt = 0;
@@ -62,7 +62,7 @@ function indexIn(para, surah, ayah) {
 }
 
 // at = "surah:ayah": open the page that holds that ayah
-async function paraPage(n, { page, limit, at, script, lang }) {
+async function paraPage(n, { page, limit, at, script, lang, reciter }) {
   const { list } = await getRanges();
   const para = list[n - 1];
   if (!para) return null;
@@ -96,7 +96,8 @@ async function paraPage(n, { page, limit, at, script, lang }) {
     ayahDocs[s] = Object.fromEntries(rows.map((r) => [r.number, r]));
   }
   const useIp = script === 'indopak' && Object.values(surahDocs).every((s) => s.loaded.indopak);
-  const ayahs = refs.map((r) => shapeAyah(surahDocs[r.surah], ayahDocs[r.surah][r.number] || { number: r.number, uthmani: '' }, useIp, lang));
+  const offs = await getOffsets();
+  const ayahs = refs.map((r) => shapeAyah(surahDocs[r.surah], ayahDocs[r.surah][r.number] || { number: r.number, uthmani: '' }, useIp, lang, audioFor(reciter, offs[r.surah] || 0, r.number)));
   return {
     para: { number: para.number, name: para.name, start: para.start, end: para.end, ayahCount: para.ayahCount },
     script: useIp ? 'indopak' : 'uthmani', scriptFallback: script === 'indopak' && !useIp,

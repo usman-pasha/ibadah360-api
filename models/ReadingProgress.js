@@ -8,4 +8,6 @@ module.exports = mongoose.model('ReadingProgress', new mongoose.Schema({
   script: { type: String, default: 'indopak' },
   lang: { type: String, default: 'en' },
   size: { type: Number, default: 1.7 },
+  reciter: { type: String, default: 'ar.alafasy' },
+  autoNext: { type: Boolean, default: true }, // keep playing into the next page
 }, { timestamps: true }));

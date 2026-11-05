@@ -22,15 +22,16 @@
     <div class="scrim" id="scrim"></div>
     <nav class="drawer" id="drawer" aria-label="Main menu">
       <img class="brand-img drawer-logo" src="logo.png" alt="Ibadah360" onerror="this.hidden=true;this.nextElementSibling.hidden=false" /><span class="brand-text" hidden>Ibadah360</span>
-      <button class="nav-item" data-view="today">Today</button>
+      <button class="nav-item" data-view="dashboard">Dashboard</button>
+      <button class="nav-item" data-view="today">Today's prayers</button>
       <button class="nav-item" data-view="times">Prayer times</button>
       <button class="nav-item" data-view="calendar">Prayer calendar</button>
       <button class="nav-item" data-view="hijri">Islamic calendar</button>
-      <button class="nav-item" data-view="stats">Stats</button>
-      <button class="nav-item" data-view="people">Find people</button>
-      <button class="nav-item" data-view="requests">Follow requests <span class="count-badge" id="reqBadge" hidden>0</span></button>
-      <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
+      <button class="nav-item" data-view="report">Progress report</button>
+      <button class="nav-item" data-view="people">People <span class="count-badge" id="reqBadge" hidden>0</span></button>
+      <button class="nav-item" data-view="course">Learn Quran</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
+      <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
       <button class="nav-item" data-view="myprofile">My profile</button>
       <button class="nav-item" data-view="account">Account</button>
       <button class="nav-item" data-view="about">About us</button>
@@ -38,7 +39,13 @@
       <button class="drawer-out" id="logout">Log out</button>
     </nav>
 
-    <section class="view" id="v-today">
+    <section class="view" id="v-dashboard">
+      <h2 class="date-h" id="dbHello"></h2>
+      <p class="hint" id="dbDate"></p>
+      <div class="dash" id="dbGrid"></div>
+    </section>
+
+    <section class="view hidden" id="v-today">
       <h2 class="date-h" id="todayDate"></h2>
       <p class="hint" id="hijriToday"></p>
       <p class="count"><b id="done">0</b> of 5 prayed &nbsp; Streak: <b id="streak">0</b> days</p>
@@ -110,18 +117,23 @@
         <button class="link-btn" id="hGoProfile">Change in Account</button></p>
     </section>
 
-    <section class="view hidden" id="v-stats">
-      <div class="stats" id="stats"></div>
-      <h2 class="sub-h">Missed by prayer</h2>
-      <div class="stats" id="missedBy"></div>
-    </section>
-
     <section class="view hidden" id="v-people">
-      <h2 class="date-h">Find people</h2>
-      <input id="peopleSearch" type="search" placeholder="Search by name or username" aria-label="Search people" autocomplete="off" />
-      <p class="hint" id="peopleHint"></p>
-      <div id="peopleList"></div>
-      <div class="pager" id="peoplePager"></div>
+      <h2 class="date-h">People</h2>
+      <div class="seg" role="group" aria-label="People">
+        <button id="tabFind" class="on">Find people</button>
+        <button id="tabReq">Requests <span class="count-badge" id="reqTabBadge" hidden>0</span></button>
+      </div>
+      <div id="paneFind">
+        <input id="peopleSearch" type="search" placeholder="Search by name or username" aria-label="Search people" autocomplete="off" />
+        <p class="hint" id="peopleHint"></p>
+        <div id="peopleList"></div>
+        <div class="pager" id="peoplePager"></div>
+      </div>
+      <div id="paneReq" class="hidden">
+        <p class="hint" id="reqHint"></p>
+        <div id="reqList"></div>
+        <div class="pager" id="reqPager"></div>
+      </div>
     </section>
 
     <section class="view hidden" id="v-user">
@@ -149,11 +161,28 @@
       </div>
     </section>
 
-    <section class="view hidden" id="v-requests">
-      <h2 class="date-h">Follow requests</h2>
-      <p class="hint" id="reqHint"></p>
-      <div id="reqList"></div>
-      <div class="pager" id="reqPager"></div>
+    <section class="view hidden" id="v-report">
+      <h2 class="date-h">Progress report</h2>
+      <div class="seg" role="group" aria-label="Period">
+        <button class="rp-tab on" data-range="week">7 days</button>
+        <button class="rp-tab" data-range="month">30 days</button>
+        <button class="rp-tab" data-range="year">12 months</button>
+        <button class="rp-tab" data-range="all">All time</button>
+      </div>
+      <p class="hint" id="rpSub"></p>
+      <div id="rpBody"></div>
+      <button class="link-btn" id="rpPrint">Print or save as PDF</button>
+    </section>
+
+    <section class="view hidden" id="v-course">
+      <h2 class="date-h">Learn Quran</h2>
+      <p class="hint">From Noorani Qaida to the complete Quran. Take the lessons in order, or start where you are.</p>
+      <div id="courseList"></div>
+    </section>
+
+    <section class="view hidden" id="v-lesson">
+      <button class="link-btn" id="lsBack">‹ All lessons</button>
+      <div id="lsBody"></div>
     </section>
 
     <section class="view hidden" id="v-learn">
@@ -180,6 +209,13 @@
         <div><label for="scriptSel">Script style</label><select id="scriptSel"></select></div>
         <div><label for="langSel">Translation</label><select id="langSel"></select></div>
       </div>
+      <div class="qrow">
+        <div><label for="reciterSel">Reciter (audio)</label><select id="reciterSel"></select></div>
+        <div class="audio-opt">
+          <label class="switch-row" for="autoNext"><span><b>Keep playing</b><small class="src">Go to the next page when this page ends</small></span><input type="checkbox" id="autoNext" role="switch" /></label>
+        </div>
+      </div>
+      <button class="btn" id="playPage">Play this page</button>
       <div class="qtools">
         <button class="link-btn" id="fontMinus" aria-label="Smaller Arabic text">A−</button>
         <button class="link-btn" id="fontPlus" aria-label="Larger Arabic text">A+</button>
@@ -258,6 +294,16 @@
     </section>
   </main>
 
+  <div class="player hidden" id="player" role="region" aria-label="Quran player">
+    <div class="pl-info"><b id="plLabel"></b><span class="src" id="plSub"></span></div>
+    <div class="pl-btns">
+      <button id="plPrev" aria-label="Previous ayah"></button>
+      <button id="plToggle" aria-label="Play or pause"></button>
+      <button id="plNext" aria-label="Next ayah"></button>
+      <button id="plStop" aria-label="Close player"></button>
+    </div>
+  </div>
+
   <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
     <div class="dialog">
       <h2 id="mTitle"></h2>
@@ -275,6 +321,9 @@
   <script src="times.js"></script>
   <script src="profile.js"></script>
   <script src="social.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="report.js"></script>
+  <script src="course.js"></script>
   <script src="tracker.js"></script>
 </body>
 </html>

@@ -21,15 +21,113 @@ const arabic = (text, script, size) => {
   return p;
 };
 
+/* ---------- audio player ---------- */
+const svg = (d, extra) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"${extra || ''}><path d="${d}"/></svg>`;
+const ICON = {
+  play: svg('M8 5v14l11-7z'), pause: svg('M6 5h4v14H6zM14 5h4v14h-4z'),
+  prev: svg('M6 6h2v12H6zM9.5 12 18 6v12z'), next: svg('M16 6h2v12h-2zM6 18V6l8.5 6z'),
+  close: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+};
+const pstate = { audio: new Audio(), list: [], idx: -1, page: 1, pages: 1, mode: 'para', n: 1, autoplayNext: false };
+
+function showPlayer(on) {
+  $('player').classList.toggle('hidden', !on);
+  document.body.classList.toggle('has-player', on);
+}
+function highlightPlaying() {
+  document.querySelectorAll('.ayah-card.playing').forEach((c) => c.classList.remove('playing'));
+  const cur = pstate.list[pstate.idx];
+  if (!cur) return;
+  const card = document.querySelector(`.ayah-card[data-key="${cur.key}"]`);
+  if (card) card.classList.add('playing');
+  $('plLabel').textContent = `Ayah ${cur.key}`;
+  const r = metaCache && metaCache.quran.reciters.find((x) => x.code === (qState && qState.reciter));
+  $('plSub').textContent = r ? r.name : '';
+  $('plToggle').innerHTML = pstate.audio.paused ? ICON.play : ICON.pause;
+}
+function stopPlayer() {
+  pstate.audio.pause();
+  pstate.idx = -1; pstate.list = []; pstate.autoplayNext = false;
+  showPlayer(false);
+  highlightPlaying();
+}
+function playAyah(i) {
+  const a = pstate.list[i];
+  if (!a || !a.audio) return stopPlayer();
+  pstate.idx = i;
+  pstate.audio.src = a.audio;
+  pstate.audio.play().catch(() => {});
+  showPlayer(true);
+  highlightPlaying();
+}
+// start from the ayahs on the page that is on screen
+function playFromPage(i) {
+  if (!lastQuran) return;
+  pstate.list = lastQuran.ayahs.slice();
+  pstate.page = lastQuran.page; pstate.pages = lastQuran.pages; pstate.mode = qCur.mode; pstate.n = qCur.n;
+  playAyah(i);
+}
+function playSingle(a) {
+  pstate.list = [{ key: a.key, audio: a.audio }]; pstate.page = 1; pstate.pages = 1;
+  playAyah(0);
+}
+function nextAyah() {
+  if (pstate.idx < pstate.list.length - 1) return playAyah(pstate.idx + 1);
+  if (qState && qState.autoNext && pstate.page < pstate.pages) {
+    pstate.autoplayNext = true;
+    qCur = { mode: pstate.mode, n: pstate.n, page: pstate.page + 1, at: null };
+    if (view === 'quran') loadQuran(); else { view = 'quran'; loadView(); }
+    return;
+  }
+  stopPlayer();
+}
+const playButton = (fn, label) => { const b = mk('button', 'play-btn'); b.innerHTML = ICON.play; b.setAttribute('aria-label', label || 'Play'); b.onclick = fn; return b; };
+
+function initPlayer() {
+  $('plPrev').innerHTML = ICON.prev; $('plNext').innerHTML = ICON.next; $('plStop').innerHTML = ICON.close; $('plToggle').innerHTML = ICON.play;
+  pstate.audio.onended = nextAyah;
+  pstate.audio.onplay = pstate.audio.onpause = highlightPlaying;
+  pstate.audio.onerror = () => { if (pstate.idx >= 0) toast('Could not play this recitation. Try another reciter.', true); stopPlayer(); };
+  $('plToggle').onclick = () => (pstate.audio.paused ? pstate.audio.play().catch(() => {}) : pstate.audio.pause());
+  $('plPrev').onclick = () => { if (pstate.idx > 0) playAyah(pstate.idx - 1); };
+  $('plNext').onclick = nextAyah;
+  $('plStop').onclick = stopPlayer;
+}
+
+/* ---------- counting what was read ---------- */
+let readTimer;
+let readMarked = '';
+const rangesOf = (ayahs) => {
+  const out = [];
+  ayahs.forEach((a) => {
+    const last = out[out.length - 1];
+    if (last && last.surah === a.surah && a.number === last.to + 1) last.to = a.number;
+    else out.push({ surah: a.surah, from: a.number, to: a.number });
+  });
+  return out;
+};
+function cancelReadMark() { clearTimeout(readTimer); }
+// A page counts as read after it has been on screen for 6 seconds
+function scheduleReadMark() {
+  clearTimeout(readTimer);
+  const ayahs = lastQuran.ayahs;
+  if (!ayahs.length) return;
+  const key = `${ayahs[0].key}-${ayahs[ayahs.length - 1].key}`;
+  if (key === readMarked) return;
+  readTimer = setTimeout(() => {
+    api('/quran/progress', { method: 'PUT', body: JSON.stringify({ read: rangesOf(ayahs) }) }).then(() => { readMarked = key; }).catch(() => {});
+  }, 6000);
+}
+
 /* ---------- ayah and duas ---------- */
 async function loadAyah() {
   const box = $('ayah');
   try {
     const st = await getQState().catch(() => ({ script: 'indopak', lang: 'en' }));
-    const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${st.lang}&script=${st.script}`);
+    const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${st.lang}&script=${st.script}&reciter=${st.reciter || ''}`);
     box.replaceChildren(arabic(a.arabic, a.script));
     if (a.translation) box.appendChild(mk('p', '', a.translation));
-    box.appendChild(mk('p', 'src', `Surah ${a.surah.englishName} ${a.key}`));
+    box.append(mk('p', 'src', `Surah ${a.surah.englishName} ${a.key}`), playButton(() => playSingle(a), `Play ayah ${a.key}`));
   } catch (e) { box.replaceChildren(mk('p', 'hint', e.message)); }
 }
 
@@ -124,7 +222,7 @@ function drawQuran() {
   body.appendChild(head);
 
   const L = meta.quran.languages.find((l) => l.code === d.language);
-  d.ayahs.forEach((a) => {
+  d.ayahs.forEach((a, i) => {
     // a new surah starts here: show its name (in para mode) and its Bismillah
     if (a.surahStart && (qCur.mode === 'para' || a.surahStart.bismillah)) {
       const h = mk('div', 'card surah-head');
@@ -136,8 +234,11 @@ function drawQuran() {
       }
       body.appendChild(h);
     }
-    const card = mk('div', 'card');
-    card.append(mk('span', 'ayah-no', a.key), arabic(a.arabic, d.script, size));
+    const card = mk('div', 'card ayah-card');
+    card.dataset.key = a.key;
+    const top = mk('div', 'ayah-top');
+    top.append(mk('span', 'ayah-no', a.key), playButton(() => playFromPage(i), `Play ayah ${a.key}`));
+    card.append(top, arabic(a.arabic, d.script, size));
     if (a.translation && L) {
       const tr = mk('p', 'tr-text' + (L.code === 'ur' ? ' urdu' : ''), a.translation);
       tr.lang = L.code; tr.dir = L.dir;
@@ -157,6 +258,7 @@ async function loadQuran() {
       [qParas, qSurahs] = await Promise.all([api('/quran/paras'), api('/quran/surahs')]);
       fillSelect($('scriptSel'), meta.quran.scripts.map((s) => [s.code, s.name]), st.script);
       fillSelect($('langSel'), [...meta.quran.languages.map((l) => [l.code, l.name]), ['none', 'No translation']], st.lang);
+      fillSelect($('reciterSel'), meta.quran.reciters.map((r) => [r.code, r.name]), st.reciter);
     }
     if (!qCur) {
       // first time this visit: open exactly where the person stopped
@@ -166,13 +268,17 @@ async function loadQuran() {
     syncQuranControls();
     $('scriptSel').value = st.script;
     $('langSel').value = st.lang;
+    $('reciterSel').value = st.reciter;
+    $('autoNext').checked = !!st.autoNext;
     body.replaceChildren(mk('p', 'hint', 'Loading… the first time a surah is opened it can take a few seconds.'));
     const where = qCur.at ? `&at=${encodeURIComponent(qCur.at)}` : `&page=${qCur.page}`;
-    lastQuran = await api(`/quran/${qCur.mode}/${qCur.n}?limit=${meta.quran.perPage}&script=${st.script}&lang=${st.lang}${where}`);
+    lastQuran = await api(`/quran/${qCur.mode}/${qCur.n}?limit=${meta.quran.perPage}&script=${st.script}&lang=${st.lang}&reciter=${st.reciter}${where}`);
     qCur.page = lastQuran.page;
     qCur.at = null;
     drawQuran();
     scheduleQuranSave();
+    scheduleReadMark();
+    if (pstate.autoplayNext) { pstate.autoplayNext = false; playFromPage(0); } else highlightPlaying();
   } catch (e) {
     body.replaceChildren(mk('p', 'empty', e.message));
     const b = mk('button', 'btn', 'Try again');
@@ -259,4 +365,8 @@ function initLearn() {
   $('langSel').onchange = async () => { await saveChoice({ lang: $('langSel').value }); loadQuran(); };
   $('fontPlus').onclick = () => setQSize(0.2);
   $('fontMinus').onclick = () => setQSize(-0.2);
+  $('reciterSel').onchange = async () => { stopPlayer(); await saveChoice({ reciter: $('reciterSel').value }); loadQuran(); };
+  $('autoNext').onchange = () => saveChoice({ autoNext: $('autoNext').checked });
+  $('playPage').onclick = () => playFromPage(0);
+  initPlayer();
 }

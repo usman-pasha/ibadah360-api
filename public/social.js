@@ -7,14 +7,13 @@ let connTab = 'followers';
 let connPage = 1;
 let reqPage = 1;
 let searchTimer;
+let peopleTab = 'find'; // 'find' or 'requests'
 let userRoot = false; // true when the profile was opened from the menu (my own profile)
 
 const avatarEl = (name, cls) => mk('div', 'avatar ' + (cls || ''), initials(name));
 
 function setBadge(n) {
-  const b = $('reqBadge');
-  b.textContent = n;
-  b.hidden = !n;
+  [$('reqBadge'), $('reqTabBadge')].forEach((b) => { b.textContent = n; b.hidden = !n; });
 }
 async function refreshBadge() {
   try { setBadge((await api('/follow/summary')).requests); } catch (e) { /* ignore */ }
@@ -77,6 +76,22 @@ function personRow(u, after, extra) {
   const row = mk('div', 'person');
   row.append(avatarEl(u.name, 'avatar-sm'), info, actions);
   return row;
+}
+
+/* ---------- People: Find people and Follow requests in one screen ---------- */
+function openPeople(tab) {
+  peopleTab = tab || 'find';
+  view = 'people';
+  closeDrawer();
+  window.scrollTo(0, 0);
+  loadView();
+}
+async function loadPeopleView() {
+  $('tabFind').classList.toggle('on', peopleTab === 'find');
+  $('tabReq').classList.toggle('on', peopleTab === 'requests');
+  $('paneFind').classList.toggle('hidden', peopleTab !== 'find');
+  $('paneReq').classList.toggle('hidden', peopleTab !== 'requests');
+  return peopleTab === 'find' ? loadPeople() : loadRequests();
 }
 
 /* ---------- Find people ---------- */
@@ -181,6 +196,8 @@ async function loadRequests() {
 }
 
 function initSocial() {
+  $('tabFind').onclick = () => { peopleTab = 'find'; loadPeopleView().catch((e) => toast(e.message, true)); };
+  $('tabReq').onclick = () => { peopleTab = 'requests'; loadPeopleView().catch((e) => toast(e.message, true)); };
   $('peopleSearch').oninput = () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => { peoplePage = 1; loadPeople().catch((e) => toast(e.message, true)); }, 300);

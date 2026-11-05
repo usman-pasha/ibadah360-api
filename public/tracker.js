@@ -11,7 +11,7 @@ const mk = (tag, cls, text) => {
   return e;
 };
 
-let view = 'today';
+let view = 'dashboard';
 let calMonth = 'current';
 let selected = null;
 let missedPage = 1;
@@ -271,25 +271,19 @@ async function loadMissed() {
   renderPager($('missedPager'), r.page, r.pages, (p) => { missedPage = p; loadMissed(); });
 }
 
-async function loadStats() {
-  const s = await api('/prayers/stats');
-  const row = (k, v) => { const r = mk('div', 'stat'); r.append(mk('span', '', k), mk('b', '', v)); return r; };
-  $('stats').replaceChildren(...s.rows.map((r) => row(r.label, r.value)));
-  $('missedBy').replaceChildren(...s.missedBy.map((r) => row(r.name, String(r.count))));
-}
-
 async function loadView() {
-  if (view !== 'quran') flushQuranSave(); // save where the person stopped reading
+  if (view !== 'quran') { flushQuranSave(); cancelReadMark(); } // save where the person stopped reading
   document.querySelectorAll('.nav-item').forEach((t) => {
-    const on = t.dataset.view === (view === 'user' && userRoot ? 'myprofile' : view);
+    const active = view === 'user' ? (userRoot ? 'myprofile' : 'people') : view === 'lesson' ? 'course' : view === 'editprofile' ? 'myprofile' : view;
+    const on = t.dataset.view === active;
     t.classList.toggle('active', on);
     t.setAttribute('aria-selected', on);
   });
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'v-' + view));
   const loaders = {
-    today: loadToday, times: loadTimesView, hijri: loadHijri, stats: loadStats, learn: loadLearn,
+    dashboard: loadDashboard, today: loadToday, times: loadTimesView, hijri: loadHijri, report: loadReport, course: loadCourse, lesson: loadLesson, learn: loadLearn,
     quran: loadQuran, editprofile: loadEditProfile, account: loadAccount, about: loadAbout,
-    people: loadPeople, user: loadUser, requests: loadRequests,
+    people: loadPeopleView, user: loadUser,
     calendar: () => Promise.all([loadCalendar(), loadMissed()]),
   };
   try { await loaders[view](); }
@@ -310,7 +304,7 @@ $('logout').onclick = () => { localStorage.clear(); location.href = 'index.html'
 
 // Refresh each minute so "Starts 4:30 pm" turns into buttons by itself
 setInterval(() => {
-  if ((view === 'today' || view === 'times') && $('modal').classList.contains('hidden')) loadView();
+  if ((['dashboard', 'today', 'times'].includes(view)) && $('modal').classList.contains('hidden')) loadView();
   refreshBadge();
 }, 60000);
 
@@ -319,5 +313,7 @@ initHijri();
 initTimes();
 initProfile();
 initSocial();
+initReport();
+initCourse();
 refreshBadge();
 loadView();
