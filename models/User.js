@@ -14,7 +14,9 @@ const userSchema = new mongoose.Schema({
   madhab: { type: String, default: 'hanafi' },   // 'hanafi' or 'shafi' (Asr time)
   method: { type: String, default: '1' },        // 1 = Karachi, 3 = Muslim World League
   hijriAdj: { type: Number, default: -1 },       // India usually sights the moon 1 day after Saudi Arabia
-  password: { type: String, required: true },
+  password: { type: String, required: function () { return !this.googleId; } }, // Google accounts may have no password
+  googleId: { type: String, unique: true, sparse: true },
+  fastQadaMade: { type: Number, default: 0 }, // missed Ramadan fasts that were made up later
   resetTokenHash: String,
   resetExpires: Date,
 }, { timestamps: true });

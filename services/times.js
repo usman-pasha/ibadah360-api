@@ -27,7 +27,7 @@ async function getTimings(user, date) {
   }
   if (!f) return null;
   const c = (v) => (v ? String(v).slice(0, 5) : null);
-  const data = { fajr: c(f.Fajr), sunrise: c(f.Sunrise), dhuhr: c(f.Dhuhr), asr: c(f.Asr), maghrib: c(f.Maghrib), isha: c(f.Isha), midnight: c(f.Midnight), lastthird: c(f.Lastthird) };
+  const data = { imsak: c(f.Imsak), fajr: c(f.Fajr), sunrise: c(f.Sunrise), dhuhr: c(f.Dhuhr), asr: c(f.Asr), maghrib: c(f.Maghrib), isha: c(f.Isha), midnight: c(f.Midnight), lastthird: c(f.Lastthird) };
   await TimesCache.updateOne({ key }, { $set: { data, createdAt: new Date() } }, { upsert: true }).catch(() => {});
   return data;
 }

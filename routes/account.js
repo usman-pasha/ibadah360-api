@@ -9,7 +9,7 @@ const { cleanPhone } = require('../utils/validate');
 const { MADHABS, METHODS, HIJRI_ADJUSTMENTS } = require('../config/options');
 
 const shape = (u) => ({
-  email: u.email, phone: u.phone || '', isPrivate: !!u.isPrivate, createdAt: u.createdAt,
+  email: u.email, phone: u.phone || '', hasPassword: !!u.password, google: !!u.googleId, isPrivate: !!u.isPrivate, createdAt: u.createdAt,
   settings: { city: u.city, state: u.state, madhab: u.madhab, method: u.method, hijriAdj: u.hijriAdj },
 });
 const placeOk = (s, min) => s.length >= min && s.length <= 60 && /^[\p{L}\s.'-]+$/u.test(s);
@@ -64,7 +64,9 @@ router.post('/password', auth, safe(async (req, res) => {
   const next = String(req.body.next || '');
   if (next.length < 6) return bad(res, 'New password must be at least 6 characters');
   const u = await User.findById(req.userId);
-  if (!u || !(await bcrypt.compare(current, u.password))) return bad(res, 'Current password is wrong');
+  if (!u) return notFound(res);
+  // A Google account that never had a password can set one without a current password
+  if (u.password && !(await bcrypt.compare(current, u.password))) return bad(res, 'Current password is wrong');
   u.password = await bcrypt.hash(next, 10);
   await u.save();
   res.json({ message: 'Password changed' });

@@ -4,6 +4,8 @@ const DailyAyah = require('../models/DailyAyah');
 const Dua = require('../models/Dua');
 const Para = require('../models/Para');
 const Lesson = require('../models/Lesson');
+const Dhikr = require('../models/Dhikr');
+const Badge = require('../models/Badge');
 const learn = require('./learnSeed');
 const About = require('../models/About');
 const content = require('./contentSeed');
@@ -13,7 +15,7 @@ const aboutSeed = require('./aboutSeed');
 // force = true:  reset every content collection to the defaults (npm run seed).
 async function seedAll({ force = false } = {}) {
   const done = [];
-  const tables = [['prayerdefs', PrayerDef, content.prayerDefs], ['hijrievents', HijriEvent, content.hijriEvents], ['dailyayahs', DailyAyah, content.dailyAyahs], ['duas', Dua, content.duas], ['paras', Para, content.paras], ['lessons', Lesson, learn.lessons]];
+  const tables = [['prayerdefs', PrayerDef, content.prayerDefs], ['hijrievents', HijriEvent, content.hijriEvents], ['dailyayahs', DailyAyah, content.dailyAyahs], ['duas', Dua, content.duas], ['paras', Para, content.paras], ['lessons', Lesson, learn.lessons], ['dhikrs', Dhikr, content.dhikrs], ['badges', Badge, content.badges]];
   for (const [name, Model, docs] of tables) {
     if (force) await Model.deleteMany({});
     else if ((await Model.estimatedDocumentCount()) > 0) continue;

@@ -11,6 +11,9 @@ const readlog = require('../services/readlog');
 const { dayPayload, compute, PRAYERS } = require('../services/prayers');
 const { timesView } = require('../services/times');
 const { getEvents } = require('../services/content');
+const badges = require('../services/badges');
+const qaza = require('../services/qaza');
+const ramadan = require('../services/ramadan');
 const { addDays, userNow, at } = require('../utils/dates');
 
 router.get('/', auth, safe(async (req, res) => {
@@ -29,6 +32,11 @@ router.get('/', auth, safe(async (req, res) => {
     Prayer.find({ user: user._id, date: { $gte: addDays(now.date, -6), $lte: now.date } }).lean(),
   ]);
 
+  const [bd, rm, qz] = await Promise.all([
+    badges.evaluate(req, user, { stats: c.stats, rs, lp }),
+    ramadan.view(req, user).catch(() => ({ supported: false })),
+    qaza.summary(req, user, { missed: c.stats.missed }),
+  ]);
   const byDate = Object.fromEntries(weekDocs.map((d) => [d.date, d]));
   const week = [];
   for (let i = 6; i >= 0; i--) {
@@ -44,6 +52,10 @@ router.get('/', auth, safe(async (req, res) => {
     quran: { started: prog.started, label: prog.started ? prog.label : null, mode: prog.mode, percent: rs.percent, ayahsRead: rs.totalRead, ayahs: rs.totalAyahs, parasDone: rs.parasDone },
     learning: lp,
     social: soc,
+    ramadan: rm.supported ? { active: rm.active, dayNumber: rm.dayNumber, dayCount: rm.dayCount, label: rm.label, fastedToday: rm.today ? rm.today.fasted : null, times: rm.times, nextRamadan: rm.nextRamadan } : null,
+    qaza: { isSetup: qz.isSetup, remaining: qz.remaining, percent: qz.percent, todayMade: qz.todayMade, dailyGoal: qz.dailyGoal, etaDays: qz.etaDays },
+    badges: { earned: bd.earnedCount, total: bd.total, recent: bd.earned[0] ? bd.earned[0].title : null, next: bd.locked[0] ? { title: bd.locked[0].title, percent: bd.locked[0].percent } : null },
+    newBadges: bd.newlyEarned.map((b) => b.title),
     upcoming: up ? { name: up.name, inLabel: up.inLabel, dateLabel: up.dateLabel, hijriText: up.hijriText, eid: up.eid } : null,
   });
 }));

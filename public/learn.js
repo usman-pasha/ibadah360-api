@@ -123,7 +123,7 @@ function scheduleReadMark() {
 async function loadAyah() {
   const box = $('ayah');
   try {
-    const st = await getQState().catch(() => ({ script: 'indopak', lang: 'en' }));
+    const st = await getQState().catch(() => ({ script: 'uthmani', lang: 'en' }));
     const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${st.lang}&script=${st.script}&reciter=${st.reciter || ''}`);
     box.replaceChildren(arabic(a.arabic, a.script));
     if (a.translation) box.appendChild(mk('p', '', a.translation));

@@ -8,7 +8,38 @@ const TEXT = {
   forgot: { title: 'Forgot password', sub: 'Enter your email and we will send you a reset link.', btn: 'Send reset link' },
 };
 
+let googleReady = false;
 function go(m) { mode = m; render(); }
+
+// Sign in with Google: the button only appears when the server has a Google Client ID
+async function startGoogle() {
+  try {
+    const meta = await (await fetch('/api/meta')).json();
+    const id = meta.auth && meta.auth.googleClientId;
+    if (!id) return;
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = () => {
+      google.accounts.id.initialize({ client_id: id, callback: onGoogle });
+      google.accounts.id.renderButton($('googleBtn'), { theme: 'outline', size: 'large', width: 300, text: 'continue_with' });
+      googleReady = true;
+      render();
+    };
+    document.head.appendChild(s);
+  } catch { /* Google button stays hidden */ }
+}
+async function onGoogle(resp) {
+  $('error').textContent = '';
+  try {
+    const res = await fetch('/api/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: resp.credential }) });
+    const data = await res.json();
+    if (!res.ok) return ($('error').textContent = data.message);
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('name', data.name);
+    location.href = 'tracker.html';
+  } catch { $('error').textContent = 'Cannot reach the server'; }
+}
 
 function render() {
   const t = TEXT[mode];
@@ -20,6 +51,7 @@ function render() {
   $('password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
   $('error').textContent = '';
   $('info').textContent = '';
+  $('googleBox').classList.toggle('hidden', mode === 'forgot' || !googleReady);
 
   const lk = (label, m) => {
     const b = document.createElement('button');
@@ -61,3 +93,4 @@ async function submit() {
 $('submit').onclick = submit;
 document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') submit(); });
 render();
+startGoogle();

@@ -53,6 +53,8 @@ async function loadAccount() {
   $('acEmail').value = a.email;
   $('acPhone').value = a.phone;
   $('acPrivate').checked = a.isPrivate;
+  $('oldPassBox').classList.toggle('hidden', !a.hasPassword);
+  $('pwTitle').textContent = a.hasPassword ? 'Change password' : 'Set a password' + (a.google ? ' (you sign in with Google)' : '');
   $('sCity').value = a.settings.city;
   $('sState').value = a.settings.state;
   buildRadios('madhabBox', 'madhab', 'Asr time (madhab)', meta.settings.madhabs, a.settings.madhab);

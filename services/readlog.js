@@ -6,7 +6,7 @@ const para = require('./para');
 const { COMPLETE_AT } = require('../config/learn');
 const { DEFAULT_RECITER } = require('../config/audio');
 
-const DEFAULTS = { mode: 'para', surah: 1, ayah: 1, script: 'indopak', lang: 'en', size: 1.7, reciter: DEFAULT_RECITER, autoNext: true };
+const DEFAULTS = { mode: 'para', surah: 1, ayah: 1, script: 'uthmani', lang: 'en', size: 1.7, reciter: DEFAULT_RECITER, autoNext: true };
 
 async function progressView(userId) {
   const row = await Progress.findOne({ user: userId }).lean();

@@ -63,4 +63,46 @@ const paras = [
   [29, 'Tabarakalladhi', 67, 1], [30, 'Amma', 78, 1],
 ].map(([number, name, startSurah, startAyah]) => ({ number, name, startSurah, startAyah }));
 
-module.exports = { prayerDefs, hijriEvents, dailyAyahs, duas, paras };
+const dhikrs = [
+  ['subhanallah', 'سُبْحَانَ ٱللَّهِ', 'SubhanAllah', 'Glory be to Allah', 33],
+  ['alhamdulillah', 'ٱلْحَمْدُ لِلَّهِ', 'Alhamdulillah', 'All praise is for Allah', 33],
+  ['allahuakbar', 'ٱللَّهُ أَكْبَرُ', 'Allahu Akbar', 'Allah is the Greatest', 34],
+  ['lailaha', 'لَا إِلَٰهَ إِلَّا ٱللَّهُ', 'La ilaha illallah', 'There is no god but Allah', 100],
+  ['istighfar', 'أَسْتَغْفِرُ ٱللَّهَ', 'Astaghfirullah', 'I seek forgiveness from Allah', 100],
+  ['durood', 'ٱللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ', 'Allahumma salli ala Muhammad', 'O Allah, send blessings upon Muhammad', 100],
+  ['hawqala', 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِٱللَّهِ', 'La hawla wa la quwwata illa billah', 'There is no power or strength except with Allah', 100],
+].map(([key, ar, tr, en, target], i) => ({ order: i + 1, key, ar, tr, en, target }));
+
+// Badges and milestones. A badge is earned when the person's number for "metric" reaches "threshold".
+const badges = [
+  ['streak', 'streak7', '7 days all on time', 'All five prayers on time, 7 days in a row', 'bestStreak', 7],
+  ['streak', 'streak30', '30 days all on time', 'All five prayers on time, 30 days in a row', 'bestStreak', 30],
+  ['streak', 'streak100', '100 days all on time', 'All five prayers on time, 100 days in a row', 'bestStreak', 100],
+  ['streak', 'streak365', 'A full year on time', 'All five prayers on time, 365 days in a row', 'bestStreak', 365],
+  ['prayer', 'ontime100', '100 prayers on time', 'One hundred prayers prayed on time', 'ontimeTotal', 100],
+  ['prayer', 'ontime500', '500 prayers on time', 'Five hundred prayers prayed on time', 'ontimeTotal', 500],
+  ['prayer', 'ontime1000', '1000 prayers on time', 'One thousand prayers prayed on time', 'ontimeTotal', 1000],
+  ['prayer', 'ontime5000', '5000 prayers on time', 'Five thousand prayers prayed on time', 'ontimeTotal', 5000],
+  ['qaza', 'qaza10', '10 qaza made up', 'Ten missed prayers made up', 'qazaMade', 10],
+  ['qaza', 'qaza100', '100 qaza made up', 'One hundred missed prayers made up', 'qazaMade', 100],
+  ['qaza', 'qaza500', '500 qaza made up', 'Five hundred missed prayers made up', 'qazaMade', 500],
+  ['qaza', 'qaza1000', '1000 qaza made up', 'One thousand missed prayers made up', 'qazaMade', 1000],
+  ['night', 'tahajjud7', '7 nights of Tahajjud', 'Tahajjud prayed on 7 nights', 'tahajjudNights', 7],
+  ['night', 'tahajjud30', '30 nights of Tahajjud', 'Tahajjud prayed on 30 nights', 'tahajjudNights', 30],
+  ['night', 'tahajjud100', '100 nights of Tahajjud', 'Tahajjud prayed on 100 nights', 'tahajjudNights', 100],
+  ['quran', 'read100', '100 ayahs read', 'One hundred ayahs of the Quran read', 'ayahsRead', 100],
+  ['quran', 'read1000', '1000 ayahs read', 'One thousand ayahs of the Quran read', 'ayahsRead', 1000],
+  ['quran', 'para1', 'First para finished', 'One para of the Quran finished', 'parasDone', 1],
+  ['quran', 'para10', '10 paras finished', 'Ten paras of the Quran finished', 'parasDone', 10],
+  ['quran', 'khatm', 'The whole Quran', 'Every ayah of the Quran read', 'ayahsRead', 6236],
+  ['learn', 'lesson1', 'First lesson', 'Your first lesson finished', 'lessonsDone', 1],
+  ['learn', 'qaida', 'Qaida and Tajweed', 'All Noorani Qaida and Tajweed lessons finished', 'lessonsDone', 17],
+  ['learn', 'juzamma', 'Juz Amma', 'Al-Fatiha and Juz Amma finished', 'lessonsDone', 55],
+  ['dhikr', 'tasbih1000', '1000 dhikr', 'One thousand dhikr counted', 'tasbihTotal', 1000],
+  ['dhikr', 'tasbih10000', '10000 dhikr', 'Ten thousand dhikr counted', 'tasbihTotal', 10000],
+  ['ramadan', 'fast1', 'First fast', 'Your first Ramadan fast recorded', 'fastsDone', 1],
+  ['ramadan', 'fast30', '30 fasts', 'Thirty fasts recorded', 'fastsDone', 30],
+  ['ramadan', 'taraweeh10', '10 nights of Taraweeh', 'Taraweeh prayed on 10 nights', 'taraweehNights', 10],
+].map(([group, key, title, description, metric, threshold], i) => ({ order: i + 1, group, key, title, description, metric, threshold }));
+
+module.exports = { prayerDefs, hijriEvents, dailyAyahs, duas, paras, dhikrs, badges };

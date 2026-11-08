@@ -24,6 +24,33 @@ function bucket(days, valueOf, maxOf) {
   }) };
 }
 
+// On time and prayed percentages for the last 8 weeks and the last 12 months
+function trends(map, first, today) {
+  const stat = (d) => {
+    const doc = map[d]; let o = 0; let q = 0; let m = 0;
+    prayers.PRAYERS.forEach((p) => { const st = doc && doc[p]; if (st === 'ontime') o++; else if (st === 'qaza') q++; else if (d < today) m++; });
+    return { o, q, m };
+  };
+  const agg = (ds) => {
+    let o = 0; let q = 0; let m = 0;
+    ds.forEach((d) => { const s = stat(d); o += s.o; q += s.q; m += s.m; });
+    const possible = o + q + m;
+    return { possible, onTimePercent: pct(o, possible), prayedPercent: pct(o + q, possible) };
+  };
+  const between = (a, b) => { const out = []; for (let d = a < first ? first : a; d <= b && d <= today; d = addDays(d, 1)) out.push(d); return out; };
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) { const end = addDays(today, -7 * i); const start = addDays(end, -6); weeks.push({ label: dayLabel(start), ...agg(between(start, end)) }); }
+  const months = [];
+  const base = new Date(today + 'T00:00:00Z');
+  for (let k = 11; k >= 0; k--) {
+    const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - k, 1));
+    const ym = d.toISOString().slice(0, 7);
+    const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+    months.push({ label: monthLabel(ym), ...agg(between(ym + '-01', last)) });
+  }
+  return { weeks, months };
+}
+
 async function build(req, user, range) {
   const key = RANGES[range] ? range : 'week';
   const spec = RANGES[key];
@@ -83,6 +110,7 @@ async function build(req, user, range) {
       total: { ayahsRead: rs.totalRead, ayahs: rs.totalAyahs, percent: rs.percent, parasDone: rs.parasDone, surahsDone: rs.surahsDone },
       paras: rs.paraRead, label: prog.started ? prog.label : null,
     },
+    trend: trends(map, first, today),
     learning: await learn.summary(user._id),
     social: { followers: c.followers, following: c.following },
   };

@@ -159,6 +159,7 @@ async function act(day, p, a) {
     if (a === 'undo') await api(`/prayers/${day.date}/undo`, { method: 'POST', body: JSON.stringify({ prayer: p.key }) });
     else await api(`/prayers/${day.date}/mark`, { method: 'POST', body: JSON.stringify({ prayer: p.key, status: a }) });
     toast({ ontime: `${p.name} saved as on time`, qaza: `${p.name} saved as qaza`, undo: `${p.name} qaza removed` }[a]);
+    setTimeout(checkBadges, 1500);
   } catch (e) { toast(e.message, true); }
   loadView();
 }
@@ -169,6 +170,7 @@ async function markNafl(day, n) {
   try {
     await api(`/prayers/${day.date}/nafl`, { method: 'POST', body: JSON.stringify({ prayer: n.key }) });
     toast(`${n.name} saved. May Allah accept it`);
+    setTimeout(checkBadges, 1500);
   } catch (e) { toast(e.message, true); }
   loadView();
 }
@@ -272,6 +274,7 @@ async function loadMissed() {
 }
 
 async function loadView() {
+  if (view !== 'tasbih') flushTasbih();
   if (view !== 'quran') { flushQuranSave(); cancelReadMark(); } // save where the person stopped reading
   document.querySelectorAll('.nav-item').forEach((t) => {
     const active = view === 'user' ? (userRoot ? 'myprofile' : 'people') : view === 'lesson' ? 'course' : view === 'editprofile' ? 'myprofile' : view;
@@ -284,6 +287,7 @@ async function loadView() {
     dashboard: loadDashboard, today: loadToday, times: loadTimesView, hijri: loadHijri, report: loadReport, course: loadCourse, lesson: loadLesson, learn: loadLearn,
     quran: loadQuran, editprofile: loadEditProfile, account: loadAccount, about: loadAbout,
     people: loadPeopleView, user: loadUser,
+    ramadan: loadRamadan, qaza: loadQaza, badges: loadBadges, tasbih: loadTasbih, zakat: loadZakat, masjids: loadMasjids,
     calendar: () => Promise.all([loadCalendar(), loadMissed()]),
   };
   try { await loaders[view](); }
@@ -315,5 +319,7 @@ initProfile();
 initSocial();
 initReport();
 initCourse();
+initTools();
+initWorship();
 refreshBadge();
 loadView();

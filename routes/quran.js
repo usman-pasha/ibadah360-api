@@ -13,7 +13,7 @@ const { userNow, dayNumber } = require('../utils/dates');
 const int = (v, d, min, max) => { const n = parseInt(v, 10); return isNaN(n) ? d : Math.min(max, Math.max(min, n)); };
 const num = (v, max) => { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 1 && n <= max ? n : 0; }; // 0 = not valid
 const lang = (v) => (v === 'none' || LANGUAGES.some((l) => l.code === v) ? v : 'en');
-const script = (v) => (SCRIPTS.some((s) => s.code === v) ? v : 'indopak');
+const script = (v) => (SCRIPTS.some((s) => s.code === v) ? v : 'uthmani');
 const reciter = (v) => (RECITERS.some((r) => r.code === v) ? v : null); // null = the default reciter
 const bad = (res, message) => res.status(400).json({ message });
 

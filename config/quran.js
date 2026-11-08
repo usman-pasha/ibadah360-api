@@ -9,8 +9,8 @@ module.exports = {
     { code: 'ml', name: 'Malayalam', edition: 'ml.abdulhameed', dir: 'ltr' },
   ],
   SCRIPTS: [
+    { code: 'uthmani', name: 'Naskh (printed Quran style)' },
     { code: 'indopak', name: 'Indian style (Indo-Pak script)' },
-    { code: 'uthmani', name: 'Madani style (Uthmani script)' },
   ],
   PER_PAGE: 10,
 };

@@ -27,6 +27,9 @@ async function loadReport() {
   $('rpSub').textContent = `${r.label} · ${r.days} day${r.days === 1 ? '' : 's'}`;
   const box = $('rpBody');
   const p = r.prayers;
+  const pctBars = (items) => items.map((x) => ({ label: x.label, value: x.prayedPercent, ontime: x.onTimePercent, max: 100 }));
+  p.trendWeeks = pctBars(r.trend.weeks);
+  p.trendMonths = pctBars(r.trend.months);
   const sections = [];
 
   // prayers
@@ -49,6 +52,10 @@ async function loadReport() {
   sections.push(
     mk('h2', 'sub-h', 'Prayers'),
     (() => { const c = mk('div', 'card'); c.append(grid, mk('h3', 'rp-h', 'Each day'), chart, legend); return c; })(),
+    mk('h2', 'sub-h', 'Weekly progress (last 8 weeks)'),
+    (() => { const c = mk('div', 'card'); c.append(barChart({ bars: p.trendWeeks }, true), mk('p', 'src', 'Dark: % on time. Light: % prayed (on time or qaza). Each bar is 7 days, labelled by its first day.')); return c; })(),
+    mk('h2', 'sub-h', 'Monthly progress (last 12 months)'),
+    (() => { const c = mk('div', 'card'); c.append(barChart({ bars: p.trendMonths }, true), mk('p', 'src', 'Dark: % on time. Light: % prayed (on time or qaza).')); return c; })(),
     mk('h2', 'sub-h', 'By prayer'), per,
     mk('h2', 'sub-h', 'Voluntary prayers'), (() => { const c = mk('div', 'card'); c.appendChild(nafl); return c; })()
   );

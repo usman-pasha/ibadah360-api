@@ -13,6 +13,7 @@ router.get('/', safe(async (req, res) => {
   const pick = (d) => ({ key: d.key, name: d.name, ar: d.ar, tip: d.tip });
   res.json({
     app: { name: 'Ibadah360', country: 'India' },
+    auth: { googleClientId: process.env.GOOGLE_CLIENT_ID || null },
     prayers: defs.fard.map(pick),
     nafl: defs.nafl.map(pick),
     social: { usernameMin: social.USERNAME_MIN, usernameMax: social.USERNAME_MAX, bioMax: social.BIO_MAX, searchMin: social.SEARCH_MIN },

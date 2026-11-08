@@ -17,6 +17,17 @@ async function loadDashboard() {
     mk('p', '', n ? `${n.label} · in ${n.inLabel}` : 'Add your city in Account to see prayer times.'),
     goBtn(n ? 'All prayer times' : 'Open Account', () => goView(n ? 'times' : 'account'), 'fbtn small light')));
 
+  // Ramadan (only when it is Ramadan, or close)
+  const rm = d.ramadan;
+  if (rm && (rm.active || (rm.nextRamadan && rm.nextRamadan.daysUntil <= 45))) {
+    if (rm.active) {
+      cards.push(dcard(rm.label, 'hero wide', mk('p', 'big', `Day ${rm.dayNumber} of ${rm.dayCount}`),
+        rm.times ? mk('p', '', `Sehri ends ${rm.times.sehri.label} · Iftar ${rm.times.iftar.label} · ${rm.times.next.name} in ${rm.times.next.inLabel}`) : mk('p', '', 'Open Ramadan for your fasting tracker.'),
+        mk('p', 'src light-text', rm.fastedToday === 'yes' ? 'You are fasting today.' : rm.fastedToday === 'no' ? 'Not fasting today.' : 'Not recorded yet.'),
+        goBtn('Fasting and Taraweeh', () => goView('ramadan'), 'fbtn small light')));
+    } else cards.push(dcard('Ramadan', 'wide', mk('p', 'big small', `Starts in ${rm.nextRamadan.daysUntil} days`), mk('p', 'src', rm.nextRamadan.label), goBtn('Ramadan mode', () => goView('ramadan'))));
+  }
+
   // today
   const ring = mk('div', 'ring'); ring.style.setProperty('--p', (d.prayers.done / d.prayers.total) * 100);
   ring.appendChild(mk('span', '', `${d.prayers.done}/${d.prayers.total}`));
@@ -34,6 +45,16 @@ async function loadDashboard() {
     bars.appendChild(col);
   });
   cards.push(dcard('This week', 'wide', bars));
+
+  // qaza goal and badges
+  const qz = d.qaza;
+  const qkids = qz.isSetup
+    ? [mk('p', 'big small', `${qz.remaining} left`), meter(qz.percent), mk('p', 'src', `Today ${qz.todayMade} of ${qz.dailyGoal} · about ${qz.etaDays} days to finish`), goBtn('Qaza goal', () => goView('qaza'))]
+    : [mk('p', '', 'Set a goal to make up your missed prayers.'), goBtn('Set my goal', () => goView('qaza'))];
+  cards.push(dcard('Qaza goal', '', ...qkids));
+  const bg = d.badges;
+  cards.push(dcard('Achievements', '', mk('p', 'big small', `${bg.earned} of ${bg.total}`), mk('p', 'src', bg.recent ? 'Latest: ' + bg.recent : 'Pray on time to earn your first badge'), ...(bg.next ? [mk('p', 'src', `Next: ${bg.next.title} (${bg.next.percent}%)`), meter(bg.next.percent)] : []), goBtn('See achievements', () => goView('badges'))));
+  if (d.newBadges.length) toast('New badge: ' + d.newBadges.join(', '));
 
   // Quran
   const q = d.quran;

@@ -296,7 +296,7 @@ input:disabled { background: #f8eef3; color: var(--muted); }
 /* Indian style (Indo-Pak) Quran script. Add your own font file at public/fonts/indopak.woff2 if you like. */
 @font-face { font-family: "IndoPak"; src: local("Noorehuda"), local("Al Qalam Quran Majeed"), local("PDMS Saleem QuranFont"), url("/fonts/indopak.woff2") format("woff2"); font-display: swap; }
 .ayah-ar.indopak { font-family: "IndoPak", "Noto Nastaliq Urdu", "Scheherazade New", serif; line-height: 2.9; }
-.ayah-ar.uthmani { font-family: "Scheherazade New", "Amiri", "Noto Naskh Arabic", "Traditional Arabic", serif; line-height: 2.1; }
+.ayah-ar.uthmani { font-family: "Amiri Quran", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif; line-height: 2.4; }
 .tr-text { margin-top: 10px; }
 .tr-text.urdu { font-family: "Noto Nastaliq Urdu", serif; line-height: 2.4; font-size: 1.1rem; }
 .qrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -479,3 +479,34 @@ body.has-player .wrap { padding-bottom: 100px; }
 body.has-player .toast { bottom: 96px; }
 .audio-opt .switch-row { margin-top: 26px; }
 @media (max-width: 520px) { .audio-opt .switch-row { margin-top: 6px; } }
+
+/* Sign in with Google */
+.or { display: flex; align-items: center; gap: 12px; margin: 18px 0 12px; color: var(--muted); font-size: .85rem; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+#googleBtn { display: flex; justify-content: center; min-height: 44px; }
+
+/* Menu groups, tools, achievements */
+.nav-group { margin: 14px 14px 4px; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.chips .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.light-text { color: rgba(255, 255, 255, .85); }
+.light-meter { background: rgba(255, 255, 255, .3); }
+.light-meter > div { background: #fff; }
+.tasbih { text-align: center; }
+.ts-ar { font-size: 2.4rem; text-align: center; }
+.ts-btn {
+  width: min(260px, 72vw); height: min(260px, 72vw); border-radius: 50%; border: 0; margin: 14px auto; font: inherit; color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; touch-action: manipulation;
+  background-image: linear-gradient(135deg, #d4538a, #a82c62); box-shadow: 0 14px 34px rgba(176, 48, 104, .35); -webkit-tap-highlight-color: transparent;
+}
+.ts-btn:active { transform: scale(.97); }
+.ts-btn span { font-size: 4.2rem; font-weight: 700; line-height: 1; }
+.ts-btn small { font-size: 1rem; opacity: .9; }
+.map { height: 320px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); margin: 12px 0; position: relative; z-index: 0; background: var(--brand-soft); }
+.md-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+a.fbtn { display: inline-block; text-decoration: none; text-align: center; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.bcard { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; opacity: .85; }
+.bcard small { color: var(--muted); }
+.bcard.got { opacity: 1; border-color: var(--brand); background-image: linear-gradient(180deg, #fff, #fff0f6); }
+.bicon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft); color: var(--muted); font-size: 1.3rem; }
+.bcard.got .bicon { background-image: linear-gradient(135deg, #e0a36e, #b8741a); color: #fff; }

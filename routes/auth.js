@@ -5,6 +5,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { sendMail } = require('../utils/mailer');
 const { uniqueUsername } = require('../services/social');
+const { OAuth2Client } = require('google-auth-library');
 const { cleanPhone } = require('../utils/validate');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -35,6 +36,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: (email || '').toLowerCase() });
+    if (user && !user.password) return res.status(400).json({ message: 'This account uses Google sign in. Use the Google button, or use Forgot password to add a password.' });
     if (!user || !(await bcrypt.compare(password || '', user.password)))
       return res.status(400).json({ message: 'Email or password is wrong' });
     res.json({ token: makeToken(user), name: user.name });
@@ -83,6 +85,28 @@ router.post('/reset', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Could not reset the password. Try again' });
+  }
+});
+
+// Sign in with Google. The browser sends the Google ID token, the server checks it with Google.
+router.post('/google', async (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return res.status(503).json({ message: 'Google sign in is not set up on this server' });
+  try {
+    const ticket = await new OAuth2Client(clientId).verifyIdToken({ idToken: String(req.body.credential || ''), audience: clientId });
+    const p = ticket.getPayload();
+    if (!p.email || !p.email_verified) return res.status(400).json({ message: 'Your Google email is not verified' });
+    const email = p.email.toLowerCase();
+    let user = (await User.findOne({ googleId: p.sub })) || (await User.findOne({ email }));
+    if (user && !user.googleId) { user.googleId = p.sub; await user.save(); } // same email: link the accounts
+    if (!user) {
+      const username = await uniqueUsername(email.split('@')[0]);
+      user = await User.create({ name: p.name || email.split('@')[0], email, googleId: p.sub, username });
+    }
+    res.json({ token: makeToken(user), name: user.name, username: user.username });
+  } catch (e) {
+    console.error('Google sign in failed:', e.message);
+    res.status(401).json({ message: 'Google sign in failed. Please try again.' });
   }
 });
 

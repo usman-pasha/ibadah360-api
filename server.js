@@ -12,6 +12,8 @@ if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
 
 const Prayer = require('./models/Prayer');
 const User = require('./models/User');
+const Migration = require('./models/Migration');
+const Progress = require('./models/ReadingProgress');
 const { uniqueUsername } = require('./services/social');
 const { seedAll } = require('./seed');
 const hijri = require('./services/hijri');
@@ -39,6 +41,12 @@ app.use('/api/hijri', require('./routes/hijri'));
 app.use('/api/quran', require('./routes/quran'));
 app.use('/api/duas', require('./routes/duas'));
 app.use('/api/learn', require('./routes/learn'));
+app.use('/api/tasbih', require('./routes/tasbih'));
+app.use('/api/badges', require('./routes/badges'));
+app.use('/api/qaza', require('./routes/qaza'));
+app.use('/api/ramadan', require('./routes/ramadan'));
+app.use('/api/zakat', require('./routes/zakat'));
+app.use('/api/places', rateLimit({ windowMs: 60 * 1000, limit: 20 }), require('./routes/places'));
 app.use('/api/report', require('./routes/report'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));
@@ -62,6 +70,13 @@ async function migrateUsernames() {
   if (old.length) console.log(`Gave usernames to ${old.length} existing account(s)`);
 }
 
+// Runs a data change one time only
+async function runOnce(key, fn) {
+  if (await Migration.exists({ key })) return;
+  await fn();
+  await Migration.create({ key });
+}
+
 const PORT = process.env.PORT || 3000;
 mongoose
   .connect(process.env.MONGO_URI)
@@ -69,6 +84,8 @@ mongoose
     console.log('MongoDB connected');
     await migrate();
     await migrateUsernames();
+    // Naskh is now the default script. People who were on the old default are moved to it once.
+    await runOnce('naskh-default', () => Progress.updateMany({ script: 'indopak' }, { $set: { script: 'uthmani' } }));
     const seeded = await seedAll();
     if (seeded.length) console.log('Saved default content in MongoDB:', seeded.join(', '));
     if (!hijri.supported) console.warn('Warning: this Node.js has no Umm al-Qura calendar. Islamic dates will not work. Use Node.js 18+.');
