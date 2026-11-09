@@ -2,14 +2,13 @@
   "name": "namaz-tracker",
   "version": "4.0.0",
   "main": "server.js",
-  "engines": {
-    "node": ">=18"
-  },
+  "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node scripts/seed.js",
-    "seed:quran": "node scripts/seedQuran.js"
+    "seed:quran": "node scripts/seedQuran.js",
+    "check:mushaf": "node scripts/checkMushaf.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -17,7 +16,6 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
-    "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.0",
     "nodemailer": "^6.9.14"

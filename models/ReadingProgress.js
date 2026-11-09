@@ -9,5 +9,8 @@ module.exports = mongoose.model('ReadingProgress', new mongoose.Schema({
   lang: { type: String, default: 'en' },
   size: { type: Number, default: 1.7 },
   reciter: { type: String, default: 'ar.alafasy' },
+  page: { type: Number, default: 1 }, // where the person stopped in the Quran Book, text layout (1 to 604)
+  printPage: { type: Number, default: 1 }, // same, print layout (1 to 610)
+  bookLayout: { type: String, default: 'print' }, // which layout the person last used
   autoNext: { type: Boolean, default: true }, // keep playing into the next page
 }, { timestamps: true }));

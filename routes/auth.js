@@ -5,7 +5,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { sendMail } = require('../utils/mailer');
 const { uniqueUsername } = require('../services/social');
-const { OAuth2Client } = require('google-auth-library');
+const { verifyGoogleToken } = require('../utils/googleToken');
 const { cleanPhone } = require('../utils/validate');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -88,13 +88,12 @@ router.post('/reset', async (req, res) => {
   }
 });
 
-// Sign in with Google. The browser sends the Google ID token, the server checks it with Google.
+// Sign in with Google. The browser sends the Google ID token, the server checks its signature with Google's public keys.
 router.post('/google', async (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) return res.status(503).json({ message: 'Google sign in is not set up on this server' });
   try {
-    const ticket = await new OAuth2Client(clientId).verifyIdToken({ idToken: String(req.body.credential || ''), audience: clientId });
-    const p = ticket.getPayload();
+    const p = await verifyGoogleToken(req.body.credential, clientId);
     if (!p.email || !p.email_verified) return res.status(400).json({ message: 'Your Google email is not verified' });
     const email = p.email.toLowerCase();
     let user = (await User.findOne({ googleId: p.sub })) || (await User.findOne({ email }));

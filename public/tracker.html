@@ -35,6 +35,7 @@
       <button class="nav-item" data-view="badges">Achievements</button>
       <p class="nav-group">Quran</p>
       <button class="nav-item" data-view="course">Learn Quran</button>
+      <button class="nav-item" data-view="book">Quran Book</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
       <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
       <p class="nav-group">Tools</p>
@@ -309,6 +310,43 @@
       <p class="src">The Quran is saved in the Ibadah360 database. The first time a surah is opened it can take a few seconds. Where you stop is saved automatically.</p>
     </section>
 
+    <section class="view hidden" id="v-book">
+      <h2 class="date-h">Quran Book</h2>
+      <div class="seg" role="group" aria-label="Book style">
+        <button id="bkLayPrint" class="on">Print (Nastaleeq, 15 lines)</button>
+        <button id="bkLayText">Text (Madani)</button>
+      </div>
+      <div id="bkPickers" class="qrow">
+        <div><label for="bkSurahSel">Surah</label><select id="bkSurahSel"></select></div>
+        <div><label for="bkJuzSel">Juz (Para)</label><select id="bkJuzSel"></select></div>
+      </div>
+      <div class="qrow">
+        <div><label for="bkPageNo" id="bkPageLabel">Page</label>
+          <div class="bk-go"><input id="bkPageNo" type="number" inputmode="numeric" min="1" max="610" value="1" /><button class="chip" id="bkGo">Go</button></div></div>
+        <div><label for="bkLang">Translation (tap an ayah)</label><select id="bkLang"></select></div>
+      </div>
+      <div class="bk-bar">
+        <button class="chip" id="bkMark" aria-pressed="false">☆ Bookmark</button>
+        <button class="chip" id="bkPlayPage">▶ Play page</button>
+        <button class="chip" id="bkNight" aria-pressed="false">Night</button>
+        <span class="bk-textonly"><button class="link-btn" id="bkFontMinus" aria-label="Smaller text">A−</button>
+        <button class="link-btn" id="bkFontPlus" aria-label="Larger text">A+</button></span>
+      </div>
+      <div class="bk-wrap">
+        <button class="bk-arrow" id="bkLeft" aria-label="Next page">‹</button>
+        <div class="bk-stage" id="bkStage" aria-live="polite"></div>
+        <button class="bk-arrow" id="bkRight" aria-label="Previous page">›</button>
+      </div>
+      <p class="src bk-tip">Swipe right or tap ‹ for the next page. Tap an ayah number below the page for its translation and audio. A page counts as read after 6 seconds. Where you stop is saved.</p>
+      <div class="bk-sheet-pop hidden" id="bkSheet" role="dialog" aria-label="Ayah details">
+        <div class="bk-sheet-head"><b id="bkSheetTitle"></b>
+          <span><button class="chip" id="bkSheetPlay">▶ Play</button> <button class="chip" id="bkSheetCopy">Copy</button> <button class="link-btn" id="bkSheetClose" aria-label="Close">✕</button></span></div>
+        <p id="bkSheetAr" class="bk-ar" dir="rtl"></p>
+        <p id="bkSheetTr" class="bk-tr"></p>
+      </div>
+      <details id="bkMarksBox" class="bk-marks"><summary>My bookmarks</summary><div id="bkMarks"></div></details>
+    </section>
+
     <section class="view hidden" id="v-editprofile">
       <button class="link-btn" id="epBack">‹ Back to profile</button>
       <h2 class="date-h">Edit profile</h2>
@@ -412,6 +450,7 @@
   <script src="course.js"></script>
   <script src="tools.js"></script>
   <script src="worship.js"></script>
+  <script src="book.js"></script>
   <script src="tracker.js"></script>
 </body>
 </html>

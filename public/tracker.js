@@ -276,6 +276,7 @@ async function loadMissed() {
 async function loadView() {
   if (view !== 'tasbih') flushTasbih();
   if (view !== 'quran') { flushQuranSave(); cancelReadMark(); } // save where the person stopped reading
+  if (view !== 'book') { flushBook(); cancelBookRead(); }
   document.querySelectorAll('.nav-item').forEach((t) => {
     const active = view === 'user' ? (userRoot ? 'myprofile' : 'people') : view === 'lesson' ? 'course' : view === 'editprofile' ? 'myprofile' : view;
     const on = t.dataset.view === active;
@@ -285,7 +286,7 @@ async function loadView() {
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== 'v-' + view));
   const loaders = {
     dashboard: loadDashboard, today: loadToday, times: loadTimesView, hijri: loadHijri, report: loadReport, course: loadCourse, lesson: loadLesson, learn: loadLearn,
-    quran: loadQuran, editprofile: loadEditProfile, account: loadAccount, about: loadAbout,
+    quran: loadQuran, book: loadBook, editprofile: loadEditProfile, account: loadAccount, about: loadAbout,
     people: loadPeopleView, user: loadUser,
     ramadan: loadRamadan, qaza: loadQaza, badges: loadBadges, tasbih: loadTasbih, zakat: loadZakat, masjids: loadMasjids,
     calendar: () => Promise.all([loadCalendar(), loadMissed()]),
@@ -321,5 +322,6 @@ initReport();
 initCourse();
 initTools();
 initWorship();
+initBook();
 refreshBadge();
 loadView();

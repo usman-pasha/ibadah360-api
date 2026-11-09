@@ -35,6 +35,7 @@ function showPlayer(on) {
   document.body.classList.toggle('has-player', on);
 }
 function highlightPlaying() {
+  if (typeof paintPlayingAyah === 'function') paintPlayingAyah(); // Quran Book
   document.querySelectorAll('.ayah-card.playing').forEach((c) => c.classList.remove('playing'));
   const cur = pstate.list[pstate.idx];
   if (!cur) return;
@@ -73,6 +74,7 @@ function playSingle(a) {
 }
 function nextAyah() {
   if (pstate.idx < pstate.list.length - 1) return playAyah(pstate.idx + 1);
+  if (pstate.mode === 'book') return bookPlayEnded(); // Quran Book: turn the page and keep playing
   if (qState && qState.autoNext && pstate.page < pstate.pages) {
     pstate.autoplayNext = true;
     qCur = { mode: pstate.mode, n: pstate.n, page: pstate.page + 1, at: null };

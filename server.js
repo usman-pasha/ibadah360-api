@@ -23,7 +23,7 @@ app.use(cors()); // lets a mobile app or another website call this API
 app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ ok: true, database: mongoose.connection.readyState === 1 }));
 app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res) => res.set('Cache-Control', 'no-cache'), // always load the newest page files
+  setHeaders: (res, file) => res.set('Cache-Control', /[\\/]mushaf[\\/]/.test(file) ? 'public, max-age=604800' : 'no-cache'), // page pictures are cached for a week, everything else is always fresh
 }));
 
 // Everything the website shows comes from these routes. A mobile app can use exactly the same ones.
@@ -39,6 +39,7 @@ app.use('/api/prayers', require('./routes/prayers'));
 app.use('/api/times', require('./routes/times'));
 app.use('/api/hijri', require('./routes/hijri'));
 app.use('/api/quran', require('./routes/quran'));
+app.use('/api/book', require('./routes/book'));
 app.use('/api/duas', require('./routes/duas'));
 app.use('/api/learn', require('./routes/learn'));
 app.use('/api/tasbih', require('./routes/tasbih'));
