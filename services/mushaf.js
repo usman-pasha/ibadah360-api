@@ -4,7 +4,20 @@ const MushafPage = require('../models/MushafPage');
 const MushafIndex = require('../models/MushafIndex');
 const Surah = require('../models/Surah');
 const { ensureSurahList, getOffsets, audioFor } = require('./quran');
+const fs = require('fs');
+const path = require('path');
 const { PAGES, QURAN_COM_MUSHAF, ANCHORS, IMAGE } = require('../config/mushaf');
+
+// public/mushaf/layers.json tells how each picture is made. Most pictures are only the ink and sit on a shared frame picture
+// (frame-a.webp or frame-b.webp), which keeps the download small. A page set to null is a complete picture.
+let layers = null;
+function frameOf(n) {
+  if (!layers) {
+    try { layers = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'mushaf', 'layers.json'), 'utf8')); } catch (e) { layers = {}; }
+  }
+  const f = layers[String(n).padStart(3, '0')];
+  return f === 'a' || f === 'b' ? `mushaf/frame-${f}.webp` : null;
+}
 
 const API = 'https://api.quran.com/api/v4';
 const fail = (msg) => Object.assign(new Error(msg), { status: 503, expose: true });
@@ -68,7 +81,7 @@ async function pageView(n, reciter) {
   });
   const surahs = [...new Set(ayahs.map((a) => a.surah))];
   return {
-    layout: 'print', page: n, pages: PAGES, image: IMAGE(n), ayahs,
+    layout: 'print', page: n, pages: PAGES, image: IMAGE(n), frame: frameOf(n), ayahs,
     surahNames: surahs.map((s) => ({ number: s, name: names[s] && names[s].name, englishName: names[s] && names[s].englishName })),
     first: ayahs[0].key, last: ayahs[ayahs.length - 1].key,
     prev: n > 1 ? n - 1 : null, next: n < PAGES ? n + 1 : null,

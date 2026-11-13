@@ -37,6 +37,7 @@ async function onGoogle(resp) {
     if (!res.ok) return ($('error').textContent = data.message);
     localStorage.setItem('token', data.token);
     localStorage.setItem('name', data.name);
+    localStorage.setItem('avatar', data.avatar || '');
     location.href = 'tracker.html';
   } catch { $('error').textContent = 'Cannot reach the server'; }
 }
@@ -84,6 +85,7 @@ async function submit() {
     if (mode === 'forgot') return ($('info').textContent = data.message);
     localStorage.setItem('token', data.token);
     localStorage.setItem('name', data.name);
+    localStorage.setItem('avatar', data.avatar || '');
     location.href = 'tracker.html';
   } catch {
     $('error').textContent = 'Cannot reach the server';

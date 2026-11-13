@@ -2,7 +2,14 @@
    Edit profile (name, username, bio) and Account (mobile, privacy, namaz settings, password). */
 let myUsername = null;
 const initials = (n) => (n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-const updateAvatar = () => { $('avatarBtn').textContent = initials(localStorage.getItem('name')); };
+// Shows the profile photo in a round avatar, or the initials when there is no photo. Only our own Cloudinary pictures (or a Google profile photo link) are accepted.
+const paintAvatar = (el, name, url) => {
+  const ok = typeof url === 'string' && /^https:\/\/(res\.cloudinary\.com|[a-z0-9-]+\.googleusercontent\.com)\//i.test(url);
+  el.classList.toggle('has-img', ok);
+  el.style.backgroundImage = ok ? `url("${url}")` : '';
+  el.textContent = ok ? '' : initials(name);
+};
+const updateAvatar = () => paintAvatar($('avatarBtn'), localStorage.getItem('name'), localStorage.getItem('avatar'));
 const getRadio = (n) => { const r = document.querySelector(`input[name="${n}"]:checked`); return r ? r.value : ''; };
 
 // Reads my profile, remembers my username, refreshes the avatar button
@@ -10,6 +17,7 @@ async function syncMe() {
   const p = await api('/profile');
   myUsername = p.username;
   localStorage.setItem('name', p.name);
+  localStorage.setItem('avatar', p.avatar || '');
   updateAvatar();
   return p;
 }
@@ -36,10 +44,77 @@ function buildRadios(boxId, name, legend, options, selected) {
   });
 }
 
+/* ---------- Profile photo ---------- */
+// The photo can be changed on two screens (Account and Edit profile). Both use the same code, their element ids start with ac or ep.
+const epPhoto = { enabled: null, max: 5 * 1024 * 1024, sets: ['ac', 'ep'] };
+
+async function ensurePhotoStatus() {
+  if (epPhoto.enabled !== null) return;
+  try { epPhoto.enabled = (await api('/profile/avatar/status')).enabled; } catch (e) { epPhoto.enabled = false; }
+}
+// Shows the saved photo (or the initials) everywhere and sets the buttons and notes of both screens
+function refreshPhotoUi() {
+  const url = localStorage.getItem('avatar') || ''; const name = localStorage.getItem('name');
+  epPhoto.sets.forEach((k) => {
+    paintAvatar($(k + 'Avatar'), name, url);
+    $(k + 'PhotoRemove').classList.toggle('hidden', !url);
+    $(k + 'PhotoBtn').disabled = !epPhoto.enabled;
+    $(k + 'PhotoNote').textContent = epPhoto.enabled ? 'JPEG, PNG or WebP, up to 5 MB. Your photo is shown on your profile.' : 'Photo upload is not set up on this server yet (the website owner needs to add the Cloudinary keys).';
+  });
+  updateAvatar();
+}
+
+// The photo is made smaller in the browser first (longest side 800 px), then sent as base64. The server checks it again.
+function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const k = Math.min(1, 800 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); // see-through PNGs get a white background
+      g.drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.88));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That photo could not be opened. Try another one.')); };
+    img.src = url;
+  });
+}
+
+async function pickPhoto(file) {
+  if (!file) return;
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { toast('Please choose a JPEG, PNG or WebP photo', true); return; }
+  if (file.size > epPhoto.max) { toast('The photo is too big. The limit is 5 MB', true); return; }
+  epPhoto.sets.forEach((k) => { $(k + 'PhotoBtn').disabled = true; $(k + 'PhotoBtn').textContent = 'Uploading…'; });
+  try {
+    const image = await shrinkPhoto(file); // base64 text, sent to the server, which stores it on Cloudinary
+    const r = await api('/profile/avatar', { method: 'PUT', body: JSON.stringify({ image }) });
+    localStorage.setItem('avatar', r.avatar);
+    toast('Photo saved');
+  } catch (e) { toast(e.message, true); }
+  epPhoto.sets.forEach((k) => { $(k + 'PhotoBtn').textContent = 'Change photo'; $(k + 'PhotoInput').value = ''; });
+  refreshPhotoUi();
+}
+
+async function removePhoto() {
+  if (!confirm('Remove your profile photo?')) return;
+  try {
+    await api('/profile/avatar', { method: 'DELETE' });
+    localStorage.setItem('avatar', '');
+    toast('Photo removed');
+  } catch (e) { toast(e.message, true); }
+  refreshPhotoUi();
+}
+
 /* ---------- Edit profile ---------- */
 async function loadEditProfile() {
   const [p, meta] = await Promise.all([syncMe(), getMeta()]);
-  $('epAvatar').textContent = initials(p.name);
+  localStorage.setItem('avatar', p.avatar || '');
+  await ensurePhotoStatus();
+  refreshPhotoUi();
   $('epName').value = p.name;
   $('epUsername').value = p.username;
   $('epUsername').maxLength = meta.social.usernameMax;
@@ -49,7 +124,8 @@ async function loadEditProfile() {
 
 /* ---------- Account ---------- */
 async function loadAccount() {
-  const [a, meta] = await Promise.all([api('/account'), getMeta()]);
+  const [a, meta] = await Promise.all([api('/account'), getMeta(), ensurePhotoStatus()]);
+  refreshPhotoUi(); // the photo section at the top
   $('acEmail').value = a.email;
   $('acPhone').value = a.phone;
   $('acPrivate').checked = a.isPrivate;
@@ -66,6 +142,11 @@ function initProfile() {
   updateAvatar();
   syncMe().catch(() => {});
   $('avatarBtn').onclick = openOwnProfile;
+  epPhoto.sets.forEach((k) => {
+    $(k + 'PhotoBtn').onclick = () => $(k + 'PhotoInput').click();
+    $(k + 'PhotoInput').onchange = () => pickPhoto($(k + 'PhotoInput').files[0]);
+    $(k + 'PhotoRemove').onclick = removePhoto;
+  });
   $('epBack').onclick = openOwnProfile;
 
   $('epSave').onclick = async () => {

@@ -6,7 +6,7 @@ const Follow = require('../models/Follow');
 const { USERNAME_MIN, USERNAME_MAX, RESERVED } = require('../config/social');
 
 const sid = (x) => String(x);
-const publicUser = (u) => ({ username: u.username, name: u.name, bio: u.bio || '', isPrivate: !!u.isPrivate });
+const publicUser = (u) => ({ username: u.username, name: u.name, bio: u.bio || '', avatar: u.avatar || '', isPrivate: !!u.isPrivate });
 const joinedLabel = (d) => new Date(d).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 const findByUsername = (name) => User.findOne({ username: String(name || '').trim().toLowerCase() });
@@ -52,7 +52,7 @@ async function listPeople(match, otherSide, viewerId, page, limit, extra) {
   const pages = Math.max(1, Math.ceil(total / limit));
   const p = Math.min(pages, Math.max(1, page));
   const rows = await Follow.find(match).sort({ createdAt: -1 }).skip((p - 1) * limit).limit(limit).lean();
-  const users = await User.find({ _id: { $in: rows.map((r) => r[otherSide]) } }).select('username name bio isPrivate').lean();
+  const users = await User.find({ _id: { $in: rows.map((r) => r[otherSide]) } }).select('username name bio avatar isPrivate').lean();
   const byId = Object.fromEntries(users.map((u) => [sid(u._id), u]));
   const ordered = rows.map((r) => ({ row: r, u: byId[sid(r[otherSide])] })).filter((x) => x.u);
   const rels = await relations(viewerId, ordered.map((x) => x.u));

@@ -8,7 +8,7 @@ const S = require('../services/social');
 const { BIO_MAX } = require('../config/social');
 
 const shape = async (u) => ({
-  name: u.name, username: u.username, bio: u.bio || '', isPrivate: !!u.isPrivate, createdAt: u.createdAt,
+  name: u.name, username: u.username, bio: u.bio || '', avatar: u.avatar || '', isPrivate: !!u.isPrivate, createdAt: u.createdAt,
   social: await S.counts(u._id),
 });
 const bad = (res, message, status = 400) => res.status(status).json({ message });

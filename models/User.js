@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   // Social profile (Instagram style)
   username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
   bio: { type: String, default: '', maxlength: 150 },
+  avatar: { type: String, default: '' }, // profile photo: https address on Cloudinary, or empty
   isPrivate: { type: Boolean, default: false }, // private: people must send a follow request
   // Namaz time settings. Defaults are for Bengaluru, Karnataka, India.
   city: { type: String, default: 'Bengaluru' },

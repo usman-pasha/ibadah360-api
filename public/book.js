@@ -24,20 +24,23 @@ async function bookPageData(n) {
 }
 function bookPrefetch(n) {
   if (n < 1 || n > bkPages()) return;
-  bookPageData(n).then((d) => { if (d.image) new Image().src = d.image; }).catch(() => {});
+  bookPageData(n).then((d) => { if (d.image) new Image().src = d.image; if (d.frame) new Image().src = d.frame; }).catch(() => {});
 }
 
 /* ---------- drawing a page ---------- */
 function drawPrintPage(d) {
   const box = mk('div', 'bk-sheet bk-print');
   box.dataset.page = d.page;
+  const pic = mk('div', 'bk-imgbox'); // the shared frame is the background and the page ink sits on top of it
+  if (d.frame) pic.style.backgroundImage = `url("${d.frame}")`;
   const img = mk('img', 'bk-img');
   img.alt = `Quran page ${d.page}: ${d.surahNames.map((s) => s.englishName).join(', ')}`;
   img.draggable = false;
   img.decoding = 'async';
   img.onerror = () => { img.replaceWith(mk('p', 'empty', 'This page picture is missing. Copy the page pictures into the public/mushaf folder (001.webp to 610.webp) and refresh.')); };
   img.src = d.image;
-  box.appendChild(img);
+  pic.appendChild(img);
+  box.appendChild(pic);
   const chips = mk('div', 'bk-chips');
   chips.appendChild(mk('span', 'src', 'Ayahs on this page:'));
   let lastSurah = 0;
@@ -311,6 +314,7 @@ function initBook() {
     if (!bk.sel) return;
     try { await navigator.clipboard.writeText(`${bk.selArabic} ﴿${toArabicDigits(bk.sel.number)}﴾ (${bk.sel.key})`); toast('Ayah copied'); } catch { toast('Could not copy', true); }
   };
+  $('bkSheetAsk').onclick = () => { if (bk.sel) askTeacher(`Explain ayah ${bk.sel.key} in simple words and tell me any tajweed points.`); };
   $('bkSheetClose').onclick = closeBookSheet;
 
   // Swipe: finger moves left to right = next page, like turning a right-to-left book

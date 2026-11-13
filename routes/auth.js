@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { sendMail } = require('../utils/mailer');
 const { uniqueUsername } = require('../services/social');
 const { verifyGoogleToken } = require('../utils/googleToken');
+const { importGoogle, needsGoogleImport } = require('../services/avatar');
 const { cleanPhone } = require('../utils/validate');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -39,7 +40,7 @@ router.post('/login', async (req, res) => {
     if (user && !user.password) return res.status(400).json({ message: 'This account uses Google sign in. Use the Google button, or use Forgot password to add a password.' });
     if (!user || !(await bcrypt.compare(password || '', user.password)))
       return res.status(400).json({ message: 'Email or password is wrong' });
-    res.json({ token: makeToken(user), name: user.name });
+    res.json({ token: makeToken(user), name: user.name, avatar: user.avatar || '' });
   } catch (e) {
     res.status(500).json({ message: 'Could not log in. Try again' });
   }
@@ -102,7 +103,14 @@ router.post('/google', async (req, res) => {
       const username = await uniqueUsername(email.split('@')[0]);
       user = await User.create({ name: p.name || email.split('@')[0], email, googleId: p.sub, username });
     }
-    res.json({ token: makeToken(user), name: user.name, username: user.username });
+    // Bring the Google profile photo along so it shows right after sign in. It is saved on Cloudinary (see services/avatar.js).
+    // If it takes more than 8 seconds, sign in goes ahead and the photo finishes in the background.
+    let avatar = user.avatar || '';
+    if (needsGoogleImport(user, p.picture)) {
+      const saved = await Promise.race([importGoogle(user._id, p.picture).catch((e) => { console.error('Google photo not saved:', e.message); return ''; }), new Promise((r) => setTimeout(() => r(null), 8000))]);
+      if (saved) avatar = saved;
+    }
+    res.json({ token: makeToken(user), name: user.name, username: user.username, avatar });
   } catch (e) {
     console.error('Google sign in failed:', e.message);
     res.status(401).json({ message: 'Google sign in failed. Please try again.' });

@@ -129,13 +129,13 @@ async function loadAyah() {
     const a = await api(`/quran/ayah-of-the-day?shift=${ayahShift}&lang=${st.lang}&script=${st.script}&reciter=${st.reciter || ''}`);
     box.replaceChildren(arabic(a.arabic, a.script));
     if (a.translation) box.appendChild(mk('p', '', a.translation));
-    box.append(mk('p', 'src', `Surah ${a.surah.englishName} ${a.key}`), playButton(() => playSingle(a), `Play ayah ${a.key}`));
+    box.append(mk('p', 'src', `Surah ${a.surah.englishName} ${a.key}`), playButton(() => playSingle(a), `Play ayah ${a.key}`), askBtn(`Explain ayah ${a.key} (Surah ${a.surah.englishName}) in simple words and tell me how to recite it correctly.`));
   } catch (e) { box.replaceChildren(mk('p', 'hint', e.message)); }
 }
 
 function duaCard(d) {
   const el = mk('div', 'card');
-  el.append(mk('h3', '', d.title), arabic(d.ar, 'uthmani'), mk('p', 'tr', d.tr), mk('p', '', d.en), mk('p', 'src', 'Source: ' + d.src));
+  el.append(mk('h3', '', d.title), arabic(d.ar, 'uthmani'), mk('p', 'tr', d.tr), mk('p', '', d.en), mk('p', 'src', 'Source: ' + d.src), askBtn(`Teach me this dua step by step and explain its meaning: ${d.title} (${d.en})`));
   return el;
 }
 
@@ -239,7 +239,7 @@ function drawQuran() {
     const card = mk('div', 'card ayah-card');
     card.dataset.key = a.key;
     const top = mk('div', 'ayah-top');
-    top.append(mk('span', 'ayah-no', a.key), playButton(() => playFromPage(i), `Play ayah ${a.key}`));
+    top.append(mk('span', 'ayah-no', a.key), playButton(() => playFromPage(i), `Play ayah ${a.key}`), askBtn(`Explain ayah ${a.key} in simple words and tell me any tajweed points.`, 'Ask'));
     card.append(top, arabic(a.arabic, d.script, size));
     if (a.translation && L) {
       const tr = mk('p', 'tr-text' + (L.code === 'ur' ? ' urdu' : ''), a.translation);

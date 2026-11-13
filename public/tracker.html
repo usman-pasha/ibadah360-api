@@ -35,6 +35,13 @@
       <button class="nav-item" data-view="badges">Achievements</button>
       <p class="nav-group">Quran</p>
       <button class="nav-item" data-view="course">Learn Quran</button>
+      <button class="nav-item" data-view="teacher">AI Teacher</button>
+      <button class="nav-item" data-view="daily">Daily lesson &amp; quiz</button>
+      <button class="nav-item" data-view="wisdom">Hadith &amp; 99 Names</button>
+      <button class="nav-item" data-view="recite">Recitation practice</button>
+      <button class="nav-item" data-view="khatam">Group Khatam</button>
+      <button class="nav-item" data-view="challenge">Challenges</button>
+      <button class="nav-item" data-view="share">Share my progress</button>
       <button class="nav-item" data-view="book">Quran Book</button>
       <button class="nav-item" data-view="quran">Full Quran</button>
       <button class="nav-item" data-view="learn">Duas and ayah of the day</button>
@@ -340,11 +347,109 @@
       <p class="src bk-tip">Swipe right or tap ‹ for the next page. Tap an ayah number below the page for its translation and audio. A page counts as read after 6 seconds. Where you stop is saved.</p>
       <div class="bk-sheet-pop hidden" id="bkSheet" role="dialog" aria-label="Ayah details">
         <div class="bk-sheet-head"><b id="bkSheetTitle"></b>
-          <span><button class="chip" id="bkSheetPlay">▶ Play</button> <button class="chip" id="bkSheetCopy">Copy</button> <button class="link-btn" id="bkSheetClose" aria-label="Close">✕</button></span></div>
+          <span><button class="chip" id="bkSheetPlay">▶ Play</button> <button class="chip" id="bkSheetCopy">Copy</button> <button class="chip" id="bkSheetAsk">Ask Teacher</button> <button class="link-btn" id="bkSheetClose" aria-label="Close">✕</button></span></div>
         <p id="bkSheetAr" class="bk-ar" dir="rtl"></p>
         <p id="bkSheetTr" class="bk-tr"></p>
       </div>
       <details id="bkMarksBox" class="bk-marks"><summary>My bookmarks</summary><div id="bkMarks"></div></details>
+    </section>
+
+    <section class="view hidden" id="v-teacher">
+      <h2 class="date-h">AI Teacher</h2>
+      <div id="tcSetup" class="card hidden">
+        <p><b>The AI Teacher is not set up yet.</b></p>
+        <p class="src">The person who runs this website needs to add a free AI key in the <code>.env</code> file (<code>AI_PROVIDER</code> and <code>AI_API_KEY</code>) and restart the server. The README explains it in 3 steps.</p>
+      </div>
+      <div id="tcChat">
+        <div class="tc-log" id="tcLog" aria-live="polite"></div>
+        <div class="tc-voice">
+          <label class="sr-only" for="tcVoiceLang">Language you speak</label>
+          <select id="tcVoiceLang" title="The language you speak"></select>
+          <label class="tc-opt"><input type="checkbox" id="tcSpeak" /> Read answers aloud</label>
+          <label class="tc-opt"><input type="checkbox" id="tcTalk" /> Talk mode (hands-free)</label>
+          <button class="chip hidden" id="tcStop">■ Stop voice</button>
+        </div>
+        <div class="tc-box">
+          <label class="sr-only" for="tcInput">Your question</label>
+          <textarea id="tcInput" rows="2" maxlength="1000" placeholder="Ask your teacher… (Enter to send)"></textarea>
+          <button class="chip tc-mic" id="tcMic" aria-pressed="false" aria-label="Speak your question">🎤</button>
+          <button class="btn" id="tcSend">Send</button>
+        </div>
+        <p class="src" id="tcVoiceNote" aria-live="polite"></p>
+        <p class="src tc-note">The AI can make mistakes. For rulings and personal matters, ask a qualified scholar or your imam. Do not type private information. Your chat is kept on this device only.
+          <button class="link-btn" id="tcClear">Clear chat</button></p>
+      </div>
+    </section>
+
+    <section class="view hidden" id="v-daily">
+      <h2 class="date-h">Daily lesson &amp; quiz</h2>
+      <div class="seg" id="dlLangs" role="group" aria-label="Lesson language"></div>
+      <p class="src" id="dlStats"></p>
+      <div id="dlBody"></div>
+    </section>
+
+    <section class="view hidden" id="v-wisdom">
+      <h2 class="date-h">Hadith &amp; 99 Names</h2>
+      <div class="card" id="wzHadith"></div>
+      <div class="card" id="wzToday"></div>
+      <h2 class="sub-h">The 99 Names of Allah</h2>
+      <div class="card"><h3>Practice</h3><button class="chip" id="wzPractice">Quiz me on 5 Names</button><div id="wzQuiz"></div></div>
+      <label class="sr-only" for="wzSearch">Search a Name or its meaning</label>
+      <input id="wzSearch" type="search" placeholder="Search a Name or its meaning" />
+      <div id="wzNames"></div>
+    </section>
+
+    <section class="view hidden" id="v-recite">
+      <h2 class="date-h">Recitation practice</h2>
+      <p class="src">Experiment. Recite an ayah and the app checks that you said the right words in the right order. It does not check tajweed rules or pronunciation.</p>
+      <div class="card hidden" id="rcSupport"><p>This browser cannot listen to speech. Please use Chrome or Edge on a computer or Android phone.</p></div>
+      <div class="qrow">
+        <div><label for="rcSurah">Surah</label><select id="rcSurah"></select></div>
+        <div><label for="rcAyah">Ayah number</label><input id="rcAyah" type="number" inputmode="numeric" min="1" value="1" /></div>
+      </div>
+      <button class="btn" id="rcLoad">Show ayah</button>
+      <div class="card" id="rcAyahBox"><p class="src">Choose a surah and ayah, then press Show ayah.</p></div>
+      <button class="btn" id="rcMic" disabled>🎤 Start reciting</button>
+      <p class="src" id="rcLive" aria-live="polite"></p>
+      <div id="rcResult"></div>
+      <p class="src">Your browser may send the sound to its speech service (Google, for Chrome) to turn it into words. The app does not save your voice.</p>
+    </section>
+
+    <section class="view hidden" id="v-khatam">
+      <h2 class="date-h">Group Khatam</h2>
+      <div id="kzHome">
+        <p class="src">Finish the whole Quran together. Each person takes some juz (paras) and ticks them off when done.</p>
+        <div id="kzList"></div>
+        <div class="card"><h3>Make a group</h3><div class="grp-form"><input id="kzName" maxlength="40" placeholder="Group name" aria-label="Group name" /><button class="btn" id="kzCreate">Create</button></div></div>
+        <div class="card"><h3>Join with a code</h3><div class="grp-form"><input id="kzCode" maxlength="12" placeholder="Code from a friend" aria-label="Group code" autocapitalize="characters" /><button class="btn" id="kzJoin">Join</button></div></div>
+      </div>
+      <div id="kzDetail" class="hidden"><button class="link-btn" id="kzBack">‹ All groups</button><div id="kzBody"></div></div>
+    </section>
+
+    <section class="view hidden" id="v-challenge">
+      <h2 class="date-h">Challenges</h2>
+      <div id="chHome">
+        <p class="src">Start a friendly challenge with family or friends and see who is ahead.</p>
+        <div id="chList"></div>
+        <div class="card"><h3>Start a challenge</h3>
+          <div class="grp-form"><input id="chName" maxlength="40" placeholder="Challenge name" aria-label="Challenge name" /></div>
+          <div class="qrow">
+            <div><label for="chMetric">Count</label><select id="chMetric"><option value="prayers">Prayers on time</option><option value="quran">Quran ayahs read</option><option value="tasbih">Tasbih count</option></select></div>
+            <div><label for="chDays">Days (1 to 30)</label><input id="chDays" type="number" inputmode="numeric" min="1" max="30" value="7" /></div>
+          </div>
+          <button class="btn" id="chCreate">Start</button>
+        </div>
+        <div class="card"><h3>Join with a code</h3><div class="grp-form"><input id="chCode" maxlength="12" placeholder="Code from a friend" aria-label="Challenge code" autocapitalize="characters" /><button class="btn" id="chJoin">Join</button></div></div>
+      </div>
+      <div id="chDetail" class="hidden"><button class="link-btn" id="chBack">‹ All challenges</button><div id="chBody"></div></div>
+    </section>
+
+    <section class="view hidden" id="v-share">
+      <h2 class="date-h">Share my progress</h2>
+      <canvas id="shCanvas" class="sh-canvas" role="img" aria-label="Your progress card"></canvas>
+      <label class="sh-check"><input type="checkbox" id="shName" checked /> Show my name on the picture</label>
+      <div class="wz-row"><button class="btn" id="shSave">Save picture</button><button class="chip" id="shShare">Share</button></div>
+      <p class="src">The picture is made on your device. Only share it if you want to.</p>
     </section>
 
     <section class="view hidden" id="v-editprofile">
@@ -353,6 +458,12 @@
       <p class="hint">This is what other people see.</p>
       <div class="card">
         <div class="avatar avatar-lg" id="epAvatar"></div>
+        <div class="ep-photo">
+          <input type="file" id="epPhotoInput" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Choose a profile photo" />
+          <button class="chip" id="epPhotoBtn">Change photo</button>
+          <button class="link-btn hidden" id="epPhotoRemove">Remove photo</button>
+        </div>
+        <p class="src ep-note" id="epPhotoNote"></p>
         <label for="epName">Full name</label>
         <input id="epName" autocomplete="name" />
         <label for="epUsername">Username</label>
@@ -366,6 +477,19 @@
     <section class="view hidden" id="v-account">
       <h2 class="date-h">Account</h2>
       <p class="hint">Private details and settings. Other people never see these.</p>
+
+      <h2 class="sub-h">Profile photo</h2>
+      <div class="card ac-photo">
+        <div class="avatar avatar-lg" id="acAvatar"></div>
+        <div class="ac-photo-side">
+          <input type="file" id="acPhotoInput" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Choose a profile photo" />
+          <div class="wz-row">
+            <button class="chip" id="acPhotoBtn">Change photo</button>
+            <button class="link-btn hidden" id="acPhotoRemove">Remove photo</button>
+          </div>
+          <p class="src" id="acPhotoNote"></p>
+        </div>
+      </div>
 
       <h2 class="sub-h">Contact</h2>
       <div class="card">
@@ -451,6 +575,13 @@
   <script src="tools.js"></script>
   <script src="worship.js"></script>
   <script src="book.js"></script>
+  <script src="teacher.js"></script>
+  <script src="voice.js"></script>
+  <script src="daily.js"></script>
+  <script src="wisdom.js"></script>
+  <script src="recite.js"></script>
+  <script src="groups.js"></script>
+  <script src="share.js"></script>
   <script src="tracker.js"></script>
 </body>
 </html>

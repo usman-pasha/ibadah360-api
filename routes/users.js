@@ -24,7 +24,7 @@ router.get('/search', auth, safe(async (req, res) => {
   const total = await User.countDocuments(filter);
   const pages = Math.max(1, Math.ceil(total / limit));
   const page = Math.min(pages, int(req.query.page, 1, 1, 100000));
-  const found = await User.find(filter).sort({ username: 1 }).skip((page - 1) * limit).limit(limit).select('username name bio isPrivate').lean();
+  const found = await User.find(filter).sort({ username: 1 }).skip((page - 1) * limit).limit(limit).select('username name bio avatar isPrivate').lean();
   const rels = await S.relations(req.userId, found);
   res.json({ total, page, pages, limit, users: found.map((u) => ({ ...S.publicUser(u), relationship: rels[String(u._id)] })) });
 }));

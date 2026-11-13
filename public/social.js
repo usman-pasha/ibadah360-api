@@ -10,7 +10,7 @@ let searchTimer;
 let peopleTab = 'find'; // 'find' or 'requests'
 let userRoot = false; // true when the profile was opened from the menu (my own profile)
 
-const avatarEl = (name, cls) => mk('div', 'avatar ' + (cls || ''), initials(name));
+const avatarEl = (name, cls, url) => { const el = mk('div', 'avatar ' + (cls || '')); paintAvatar(el, name, url); return el; };
 
 function setBadge(n) {
   [$('reqBadge'), $('reqTabBadge')].forEach((b) => { b.textContent = n; b.hidden = !n; });
@@ -74,7 +74,7 @@ function personRow(u, after, extra) {
   if (extra) actions.appendChild(extra);
   actions.appendChild(followButton(u, after));
   const row = mk('div', 'person');
-  row.append(avatarEl(u.name, 'avatar-sm'), info, actions);
+  row.append(avatarEl(u.name, 'avatar-sm', u.avatar), info, actions);
   return row;
 }
 
@@ -150,7 +150,7 @@ async function loadUser() {
     return loadView();
   }
   $('uBack').hidden = userRoot;
-  $('uAvatar').textContent = initials(p.name);
+  paintAvatar($('uAvatar'), p.name, p.avatar);
   $('uName').textContent = p.name;
   $('uHandle').textContent = '@' + p.username + (p.isPrivate ? ' · Private account' : '');
   $('uBio').textContent = p.bio;
@@ -189,7 +189,7 @@ async function loadRequests() {
     const actions = mk('div', 'person-actions');
     actions.append(yes, no);
     const row = mk('div', 'person');
-    row.append(avatarEl(u.name, 'avatar-sm'), info, actions);
+    row.append(avatarEl(u.name, 'avatar-sm', u.avatar), info, actions);
     return row;
   }));
   renderPager($('reqPager'), r.page, r.pages, (p) => { reqPage = p; loadRequests(); });
